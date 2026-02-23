@@ -194,16 +194,16 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="sites" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg">
-            <TabsTrigger value="sites" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg bg-horizon">
+            <TabsTrigger value="sites" className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white">
               <MapPin className="w-4 h-4" />
               Sites
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" data-testid="users-tab" className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white">
               <Users className="w-4 h-4" />
               Users
             </TabsTrigger>
-            <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <TabsTrigger value="integrations" data-testid="integrations-tab" className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white">
               <Settings className="w-4 h-4" />
               Integrations
             </TabsTrigger>
