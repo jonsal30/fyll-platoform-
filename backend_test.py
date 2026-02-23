@@ -70,6 +70,21 @@ class TimeClockAPITester:
             200
         )
         return success, response
+    
+    def test_users(self):
+        """Test /api/users endpoint"""
+        success, response = self.run_test(
+            "Get Users", 
+            "GET", 
+            "users", 
+            200
+        )
+        # Print user details if successful
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} users:")
+            for user in response[:5]:  # Show first 5 users
+                print(f"     - {user.get('name', 'Unknown')} (ID: {user.get('numeric_id', 'None')}) - Role: {user.get('role', 'Unknown')}")
+        return success, response
 
     def test_sites(self):
         """Test /api/sites endpoint"""
