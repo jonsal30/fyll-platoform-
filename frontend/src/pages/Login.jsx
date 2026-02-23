@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { User, KeyRound } from "lucide-react";
 
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+
 const Login = () => {
   const navigate = useNavigate();
   const { user, login } = useAuth();
@@ -50,35 +52,41 @@ const Login = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4 relative"
-      style={{
-        backgroundImage: `linear-gradient(to bottom, rgba(9,9,11,0.85), rgba(9,9,11,0.95)), url(https://images.pexels.com/photos/12418936/pexels-photo-12418936.jpeg)`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center'
-      }}
-    >
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo/Title */}
-        <div className="text-center mb-8">
-          <h1 className="font-heading text-5xl font-bold text-foreground tracking-tight">
-            SITE COMMANDER
-          </h1>
-          <p className="text-muted-foreground mt-2">Workforce Time Tracking</p>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-foundation">
+      <div className="w-full max-w-md space-y-8">
+        {/* Logo */}
+        <div className="text-center">
+          <img 
+            src={LOGO_URL} 
+            alt="Garza Group Recruiting Services" 
+            className="h-20 mx-auto mb-4 object-contain"
+          />
+          <p className="text-horizon/80 text-sm italic font-serif">
+            "Building people, not just payroll."
+          </p>
         </div>
 
-        <Card className="bg-card/80 backdrop-blur-sm border-border">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="font-heading text-2xl text-center">Sign In</CardTitle>
+        <Card className="bg-white border-0 shadow-xl">
+          <CardHeader className="space-y-1 pb-4 text-center">
+            <CardTitle className="font-serif text-2xl text-foundation">Time Clock</CardTitle>
+            <p className="text-sm text-muted-foreground">Sign in to track your hours</p>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="numeric" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="numeric" data-testid="numeric-tab" className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-horizon">
+                <TabsTrigger 
+                  value="numeric" 
+                  data-testid="numeric-tab" 
+                  className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white"
+                >
                   <KeyRound className="w-4 h-4" />
                   Employee ID
                 </TabsTrigger>
-                <TabsTrigger value="google" data-testid="google-tab" className="flex items-center gap-2">
+                <TabsTrigger 
+                  value="google" 
+                  data-testid="google-tab" 
+                  className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white"
+                >
                   <User className="w-4 h-4" />
                   Google
                 </TabsTrigger>
@@ -87,23 +95,23 @@ const Login = () => {
               <TabsContent value="numeric">
                 <form onSubmit={handleNumericLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm text-muted-foreground">Employee ID</label>
+                    <label className="text-sm text-foundation font-medium">Employee ID</label>
                     <Input
                       data-testid="numeric-id-input"
                       type="text"
                       placeholder="Enter your employee ID"
                       value={numericId}
                       onChange={(e) => setNumericId(e.target.value)}
-                      className="h-12 text-lg font-mono bg-background border-border focus:border-primary"
+                      className="h-12 text-lg bg-horizon border-gray-200 focus:border-keystone focus:ring-keystone"
                     />
                   </div>
                   <Button
                     data-testid="numeric-login-btn"
                     type="submit"
                     disabled={loading}
-                    className="w-full h-12 bg-primary text-primary-foreground font-bold tracking-wide uppercase hover:bg-primary/90 glow-primary"
+                    className="w-full h-12 bg-keystone text-white font-semibold tracking-wide hover:bg-keystone/90 glow-keystone"
                   >
-                    {loading ? "Signing in..." : "Clock In"}
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -117,7 +125,7 @@ const Login = () => {
                     data-testid="google-login-btn"
                     type="button"
                     onClick={handleGoogleLogin}
-                    className="w-full h-12 bg-card border border-border hover:bg-muted font-medium flex items-center justify-center gap-3"
+                    className="w-full h-12 bg-white border border-gray-200 hover:bg-gray-50 text-foundation font-medium flex items-center justify-center gap-3"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -133,9 +141,14 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          By signing in, you agree to the company time tracking policy
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-xs text-horizon/60">
+            Equal Opportunity Employer • E-Verify Compliant
+          </p>
+          <p className="text-xs text-horizon/40">
+            © {new Date().getFullYear()} Garza Group Recruiting Services, LLC
+          </p>
+        </div>
       </div>
     </div>
   );
