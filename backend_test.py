@@ -49,17 +49,19 @@ class GGRSTimeClockAPITester:
             print(f"❌ Failed - Network Error: {str(e)}")
             return False, {}
 
-    def test_numeric_login(self):
-        """Test numeric ID login"""
+    def test_adriana_login(self):
+        """Test login with Adriana Hernandez numeric ID (1001)"""
         success, response = self.run_test(
-            "Numeric Login", 
+            "Adriana Hernandez Login (ID: 1001)", 
             "POST", 
             "auth/numeric-login", 
             200,
-            data={"numeric_id": self.numeric_id},
+            data={"numeric_id": self.adriana_numeric_id},
             use_auth=False
         )
-        return success
+        if success and response:
+            print(f"   Logged in as: {response.get('name', 'Unknown')} (Role: {response.get('role', 'Unknown')})")
+        return success, response
 
     def test_auth_me(self):
         """Test /api/auth/me endpoint"""
