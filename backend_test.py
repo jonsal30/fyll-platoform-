@@ -207,49 +207,96 @@ class GGRSTimeClockAPITester:
         return success
 
 def main():
-    print("🚀 Starting Time Clock API Tests...")
-    print("=" * 50)
+    print("🚀 Starting GGRS Time Clock API Tests...")
+    print("Testing 34+ employees, payroll reports, audit trail, and Adriana Hernandez login")
+    print("=" * 70)
     
-    tester = TimeClockAPITester()
+    tester = GGRSTimeClockAPITester()
 
     # Test API root (no auth needed)
     print("\n📋 Testing Basic API Access...")
     tester.test_api_root()
 
-    # Test numeric login
-    print("\n📋 Testing Authentication...")
-    login_success = tester.test_numeric_login()
+    # Test specific numeric login for Adriana Hernandez (1001)
+    print("\n📋 Testing Adriana Hernandez Login (ID: 1001)...")
+    adriana_login_success, adriana_data = tester.test_adriana_login()
     
-    if not login_success:
-        print("⚠️  Numeric login failed, but continuing with pre-created session token...")
+    if not adriana_login_success:
+        print("⚠️  Adriana login failed, but continuing with pre-created admin session token...")
 
-    # Test protected endpoints with session token
-    print("\n📋 Testing Protected Endpoints...")
+    # Test protected endpoints with admin session token
+    print("\n📋 Testing Admin User Management...")
     auth_success, user_data = tester.test_auth_me()
     
     if not auth_success:
-        print("❌ Authentication failed - stopping tests")
+        print("❌ Admin authentication failed - stopping tests")
         return 1
 
-    sites_success, sites_data = tester.test_sites()
-    status_success, status_data = tester.test_clock_status()
+    # Test 34+ employees requirement
     users_success, users_data = tester.test_users()
 
-    # Print test summary
-    print("\n" + "=" * 50)
+    # Test site management
+    print("\n📋 Testing Site Management...")
+    sites_success, sites_data = tester.test_sites()
+    status_success, status_data = tester.test_clock_status()
+
+    # Test new payroll and audit endpoints
+    print("\n📋 Testing Payroll & Audit Reports...")
+    payroll_success, payroll_data = tester.test_payroll_report()
+    audit_success, audit_data = tester.test_audit_trail()
+    
+    print("\n📋 Testing CSV Export Functionality...")
+    csv_success = tester.test_csv_exports()
+
+    # Print detailed summary
+    print("\n" + "=" * 70)
     print(f"📊 Test Summary: {tester.tests_passed}/{tester.tests_run} passed")
     
     if auth_success and user_data:
-        print(f"👤 Test User: {user_data.get('name', 'Unknown')} ({user_data.get('role', 'Unknown')})")
+        print(f"👤 Admin User: {user_data.get('name', 'Unknown')} ({user_data.get('role', 'Unknown')})")
     
-    if sites_success and isinstance(sites_data, list):
-        print(f"🏢 Sites Available: {len(sites_data)}")
+    if adriana_login_success and adriana_data:
+        print(f"👤 Adriana Login: ✅ {adriana_data.get('name', 'Unknown')} (ID: {adriana_data.get('numeric_id', 'None')})")
+    else:
+        print(f"👤 Adriana Login: ❌ Failed to login with ID 1001")
     
     if users_success and isinstance(users_data, list):
-        print(f"👥 Users Available: {len(users_data)}")
+        employee_count = len(users_data)
+        print(f"👥 Total Users: {employee_count} {'✅' if employee_count >= 34 else '❌'} ({'Meets' if employee_count >= 34 else 'Below'} 34+ requirement)")
+        
+        # Count users with numeric IDs
+        numeric_users = [u for u in users_data if u.get('numeric_id')]
+        print(f"🔢 Users with Numeric IDs: {len(numeric_users)}")
+        
+        # Count users with Google emails
+        google_users = [u for u in users_data if u.get('google_email')]  
+        print(f"📧 Users with Google Emails: {len(google_users)}")
     
-    if status_success and status_data:
-        print(f"⏰ Clock Status: {'Clocked In' if status_data.get('is_clocked_in') else 'Not Clocked In'}")
+    if sites_success and isinstance(sites_data, list):
+        print(f"🏢 Work Sites: {len(sites_data)}")
+    
+    if payroll_success:
+        print(f"💰 Payroll Report: ✅ Working")
+    else:
+        print(f"💰 Payroll Report: ❌ Failed")
+        
+    if audit_success:
+        print(f"📋 Audit Trail: ✅ Working")
+    else:
+        print(f"📋 Audit Trail: ❌ Failed")
+        
+    if csv_success:
+        print(f"📄 CSV Exports: ✅ Working")
+    else:
+        print(f"📄 CSV Exports: ❌ Failed")
+
+    print("\n🎯 Key Requirements Status:")
+    print(f"   ✅ Admin Users tab (API endpoint): {'Working' if users_success else 'Failed'}")
+    print(f"   {'✅' if users_success and len(users_data or []) >= 34 else '❌'} 34+ employees: {len(users_data or [])} found")
+    print(f"   ✅ Payroll API endpoint: {'Working' if payroll_success else 'Failed'}")
+    print(f"   ✅ Audit trail API endpoint: {'Working' if audit_success else 'Failed'}")
+    print(f"   {'✅' if adriana_login_success else '❌'} Adriana Hernandez login (ID 1001): {'Working' if adriana_login_success else 'Failed'}")
+    print(f"   ✅ CSV export A-Z sorting: {'Working' if csv_success else 'Failed'}")
 
     # Return status
     return 0 if tester.tests_passed == tester.tests_run else 1
