@@ -1,0 +1,111 @@
+{
+  "identity": {
+    "name": "Site Commander",
+    "archetype": "The Performance Pro",
+    "vibe": "Tactical, Industrial, Precision, High-Visibility",
+    "mission": "To provide a rugged, no-nonsense time tracking tool for the field workforce.",
+    "principles": [
+      "Visibility is King: High contrast for outdoor use.",
+      "Speed over Style: One tap to clock in.",
+      "Tactical Aesthetics: Matte blacks, safety oranges, monospace data.",
+      "Mobile First: Thumb-zone optimized interactions."
+    ]
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Barlow Condensed, sans-serif",
+      "weights": ["600", "700"],
+      "usage": "All section headers, dashboard titles, and big metrics.",
+      "letter_spacing": "tracking-tight"
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "usage": "General text, lists, instructions."
+    },
+    "data": {
+      "font_family": "JetBrains Mono, monospace",
+      "usage": "Time stamps, geo-coordinates, IDs, financial data."
+    },
+    "google_fonts_import": "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  },
+  "colors": {
+    "mode": "dark",
+    "palette": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "surface_highlight": "#27272A",
+      "border": "#27272A",
+      "primary": "#F97316",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#0EA5E9",
+      "success": "#22C55E",
+      "error": "#EF4444",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#A1A1AA",
+      "text_tertiary": "#52525B"
+    },
+    "usage_rules": [
+      "Use Primary (Orange) ONLY for the main 'Clock In/Out' action and critical alerts.",
+      "Use Secondary (Sky Blue) for navigation active states and secondary buttons.",
+      "Backgrounds must be Zinc-950 (#09090B), never pure black.",
+      "Borders should be subtle (Zinc-800), 1px solid."
+    ]
+  },
+  "layout": {
+    "grid_system": "Bento Grid",
+    "spacing": "Generous (p-4 to p-8) for touch targets.",
+    "container_width": "max-w-md mx-auto for mobile views, max-w-7xl for dashboard.",
+    "strategies": [
+      "Mobile: Single column, bottom navigation bar.",
+      "Desktop: Sidebar navigation, 3-column dashboard grid.",
+      "Cards: 1px border, no shadow, rounded-sm (2px)."
+    ]
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm font-bold tracking-wide uppercase shadow-[0_0_15px_rgba(249,115,22,0.3)]",
+      "secondary": "bg-surface border border-border hover:bg-surface_highlight text-text_primary rounded-sm font-medium",
+      "clock_action": "w-48 h-48 rounded-full border-4 border-surface_highlight flex items-center justify-center text-2xl font-black uppercase tracking-widest shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] active:scale-95 transition-all"
+    },
+    "cards": {
+      "style": "bg-surface border border-border rounded-sm p-6 relative overflow-hidden",
+      "decoration": "Optional: Add a 2px colored top border (primary or secondary) to indicate category."
+    },
+    "inputs": {
+      "style": "bg-background border border-border focus:border-primary rounded-sm h-12 px-4 text-lg"
+    },
+    "status_indicators": {
+      "online": "w-2 h-2 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.6)]",
+      "offline": "w-2 h-2 rounded-full bg-text_tertiary"
+    }
+  },
+  "visual_enhancers": {
+    "texture": "Use a subtle noise overlay (opacity 0.02) on the main background to reduce digital flatness.",
+    "gradients": "Avoid gradients on surfaces. Use them only for 'glow' effects behind key actions.",
+    "icons": "Lucide React (default). Use stroke-width={1.5} for a technical feel.",
+    "animations": "Micro-interactions only. 0.2s ease-out for hover. No layout shifts."
+  },
+  "image_urls": {
+    "login_background": "https://images.pexels.com/photos/12418936/pexels-photo-12418936.jpeg",
+    "profile_placeholder": "https://images.pexels.com/photos/8159/pexels-photo.jpg",
+    "site_map_placeholder": "https://images.unsplash.com/photo-1469289759076-d1484757abc3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODF8MHwxfHNlYXJjaHwyfHxpbmR1c3RyaWFsJTIwd2FyZWhvdXNlJTIwbW9ybmluZ3xlbnwwfHx8fDE3NzE4NTU2MTJ8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' if not present.",
+    "Update 'tailwind.config.js' to include the custom colors and fonts defined above.",
+    "Import the Google Fonts in 'index.css'.",
+    "Create a 'Layout' component that handles the Mobile vs Desktop structure automatically.",
+    "For the 'Clock In' button, implement a 'Long Press' logic (simulated or actual) to prevent accidental clicks.",
+    "Use 'Sonner' for all toast notifications (success/error).",
+    "Ensure the Geo-fencing check happens silently in the background but shows a clear 'Location Verified' badge on the UI."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not use gradients for backgrounds. Use solid colors with subtle noise.",
+    "Avoid centered text for body content. Left align for readability.",
+    "Use high contrast colors for text. Ensure accessibility.",
+    "All interactive elements must have a 'data-testid' attribute.",
+    "Use 'sonner' for toasts.",
+    "Mobile first design is mandatory."
+  ]
+}
