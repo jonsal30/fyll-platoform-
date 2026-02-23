@@ -79,6 +79,11 @@ class TimeClockAPITester:
             "sites", 
             200
         )
+        # Print site details if successful
+        if success and isinstance(response, list):
+            print(f"   Found {len(response)} sites:")
+            for site in response[:3]:  # Show first 3 sites
+                print(f"     - {site.get('name', 'Unknown')}: {site.get('address', 'No address')}")
         return success, response
 
     def test_clock_status(self):
