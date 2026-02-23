@@ -14,6 +14,8 @@ import {
   Calendar, Loader2, FileText, Camera
 } from "lucide-react";
 
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+
 const ApprovalPage = () => {
   const { timesheetId } = useParams();
   const [searchParams] = useSearchParams();
@@ -84,9 +86,9 @@ const ApprovalPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-horizon flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 animate-spin text-keystone mx-auto mb-4" />
           <p className="text-muted-foreground">Loading timesheet...</p>
         </div>
       </div>
@@ -95,11 +97,11 @@ const ApprovalPage = () => {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="max-w-md w-full bg-card border-border">
+      <div className="min-h-screen bg-horizon flex items-center justify-center p-4">
+        <Card className="max-w-md w-full bg-white border-0 shadow-lg">
           <CardContent className="py-12 text-center">
-            <XCircle className="w-16 h-16 mx-auto mb-4 text-destructive" />
-            <h2 className="font-heading text-2xl font-bold mb-2">Timesheet Not Found</h2>
+            <XCircle className="w-16 h-16 mx-auto mb-4 text-vertex" />
+            <h2 className="font-serif text-2xl font-bold text-foundation mb-2">Timesheet Not Found</h2>
             <p className="text-muted-foreground">
               This timesheet may have been deleted or the link is invalid.
             </p>
@@ -113,44 +115,48 @@ const ApprovalPage = () => {
 
   const getStatusBadge = (status) => {
     const config = {
-      submitted: { variant: "outline", color: "text-secondary" },
-      approved: { variant: "default", color: "text-success" },
-      rejected: { variant: "destructive", color: "text-destructive" }
+      submitted: { variant: "outline", className: "border-keystone text-keystone" },
+      approved: { variant: "default", className: "bg-green-500" },
+      rejected: { variant: "destructive", className: "" }
     };
     const c = config[status] || config.submitted;
     return (
-      <Badge variant={c.variant} className={c.color}>
+      <Badge variant={c.variant} className={c.className}>
         {status.toUpperCase()}
       </Badge>
     );
   };
 
   return (
-    <div className="min-h-screen bg-background noise-bg p-4">
+    <div className="min-h-screen bg-horizon p-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center py-6">
-          <h1 className="font-heading text-4xl font-bold mb-2">SITE COMMANDER</h1>
+          <img 
+            src={LOGO_URL} 
+            alt="Garza Group" 
+            className="h-16 mx-auto mb-4 object-contain"
+          />
           <p className="text-muted-foreground">Timesheet Approval</p>
         </div>
 
         {/* Status Banner */}
         {completed && (
-          <Card className={`border-2 ${
-            timesheet.status === "approved" ? "border-success bg-success/10" : 
-            timesheet.status === "rejected" ? "border-destructive bg-destructive/10" : 
-            "border-secondary bg-secondary/10"
+          <Card className={`border-2 shadow-md ${
+            timesheet.status === "approved" ? "border-green-500 bg-green-50" : 
+            timesheet.status === "rejected" ? "border-vertex bg-red-50" : 
+            "border-keystone bg-indigo-50"
           }`}>
             <CardContent className="py-4 text-center">
               {timesheet.status === "approved" ? (
-                <div className="flex items-center justify-center gap-2 text-success">
+                <div className="flex items-center justify-center gap-2 text-green-600">
                   <CheckCircle2 className="w-6 h-6" />
-                  <span className="font-heading text-xl">Timesheet Approved</span>
+                  <span className="font-serif text-xl">Timesheet Approved</span>
                 </div>
               ) : timesheet.status === "rejected" ? (
-                <div className="flex items-center justify-center gap-2 text-destructive">
+                <div className="flex items-center justify-center gap-2 text-vertex">
                   <XCircle className="w-6 h-6" />
-                  <span className="font-heading text-xl">Timesheet Rejected</span>
+                  <span className="font-serif text-xl">Timesheet Rejected</span>
                 </div>
               ) : null}
               {timesheet.notes && (
@@ -161,19 +167,19 @@ const ApprovalPage = () => {
         )}
 
         {/* Employee Info */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white border-0 shadow-md">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+              <div className="w-16 h-16 rounded-full bg-keystone/10 flex items-center justify-center overflow-hidden">
                 {employee?.picture ? (
                   <img src={employee.picture} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <User className="w-8 h-8 text-muted-foreground" />
+                  <User className="w-8 h-8 text-keystone" />
                 )}
               </div>
               
               <div className="flex-1">
-                <h2 className="font-heading text-2xl font-bold">{employee?.name || "Unknown Employee"}</h2>
+                <h2 className="font-serif text-2xl font-bold text-foundation">{employee?.name || "Unknown Employee"}</h2>
                 <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
@@ -187,7 +193,7 @@ const ApprovalPage = () => {
               </div>
               
               <div className="text-right">
-                <p className="font-mono text-4xl font-bold text-primary">{timesheet.total_hours?.toFixed(2)}h</p>
+                <p className="font-mono text-4xl font-bold text-keystone">{timesheet.total_hours?.toFixed(2)}h</p>
                 <p className="text-sm text-muted-foreground">{entries?.length || 0} entries</p>
                 <div className="mt-2">{getStatusBadge(timesheet.status)}</div>
               </div>
@@ -196,16 +202,16 @@ const ApprovalPage = () => {
         </Card>
 
         {/* Entries Table */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white border-0 shadow-md">
           <CardHeader>
-            <CardTitle className="font-heading text-xl flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
+            <CardTitle className="font-serif text-xl flex items-center gap-2 text-foundation">
+              <Clock className="w-5 h-5 text-keystone" />
               Time Entries
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table className="data-table">
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
@@ -220,7 +226,7 @@ const ApprovalPage = () => {
                 <TableBody>
                   {entries?.map((entry) => (
                     <TableRow key={entry.entry_id}>
-                      <TableCell>{formatDate(entry.clock_in)}</TableCell>
+                      <TableCell className="font-medium">{formatDate(entry.clock_in)}</TableCell>
                       <TableCell className="font-mono">{formatTime(entry.clock_in)}</TableCell>
                       <TableCell className="font-mono">{formatTime(entry.clock_out)}</TableCell>
                       <TableCell className="font-mono">
@@ -234,12 +240,12 @@ const ApprovalPage = () => {
                       </TableCell>
                       <TableCell>
                         {entry.location_verified ? (
-                          <Badge variant="outline" className="text-success border-success">
+                          <Badge variant="outline" className="text-xs text-green-600 border-green-600">
                             <CheckCircle2 className="w-3 h-3 mr-1" />
                             Verified
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-destructive border-destructive">
+                          <Badge variant="outline" className="text-xs text-vertex border-vertex">
                             <XCircle className="w-3 h-3 mr-1" />
                             Off-site
                           </Badge>
@@ -247,7 +253,7 @@ const ApprovalPage = () => {
                       </TableCell>
                       <TableCell>
                         {entry.clock_in_photo ? (
-                          <Badge variant="outline" className="text-secondary">
+                          <Badge variant="outline" className="text-xs text-keystone">
                             <Camera className="w-3 h-3 mr-1" />
                             Yes
                           </Badge>
@@ -265,10 +271,10 @@ const ApprovalPage = () => {
 
         {/* Approval Actions */}
         {!completed && timesheet.status === "submitted" && (
-          <Card className="bg-card border-border">
+          <Card className="bg-white border-0 shadow-md">
             <CardHeader>
-              <CardTitle className="font-heading text-xl flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
+              <CardTitle className="font-serif text-xl flex items-center gap-2 text-foundation">
+                <FileText className="w-5 h-5 text-keystone" />
                 Manager Review
               </CardTitle>
             </CardHeader>
@@ -280,7 +286,7 @@ const ApprovalPage = () => {
                   placeholder="Add any notes or corrections..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="mt-1 bg-background"
+                  className="mt-1 bg-horizon border-gray-200"
                 />
               </div>
               
@@ -289,7 +295,7 @@ const ApprovalPage = () => {
                   data-testid="approve-btn"
                   onClick={() => handleApproval("approve")}
                   disabled={processing}
-                  className="flex-1 bg-success hover:bg-success/90"
+                  className="flex-1 bg-green-500 hover:bg-green-600"
                 >
                   {processing ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -301,10 +307,9 @@ const ApprovalPage = () => {
                 
                 <Button
                   data-testid="reject-btn"
-                  variant="destructive"
                   onClick={() => handleApproval("reject")}
                   disabled={processing}
-                  className="flex-1"
+                  className="flex-1 bg-vertex hover:bg-vertex/90"
                 >
                   {processing ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -319,9 +324,14 @@ const ApprovalPage = () => {
         )}
 
         {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground py-4">
-          Site Commander • Workforce Time Tracking
-        </p>
+        <div className="text-center py-4 space-y-2">
+          <p className="text-xs text-muted-foreground italic font-serif">
+            "Strengthening communities, one person at a time."
+          </p>
+          <p className="text-xs text-muted-foreground">
+            © {new Date().getFullYear()} Garza Group Recruiting Services, LLC
+          </p>
+        </div>
       </div>
     </div>
   );
