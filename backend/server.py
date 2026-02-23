@@ -252,22 +252,28 @@ async def create_session(request: Request, response: Response):
         
         user_data = auth_response.json()
     
-    # Check if user exists
-    existing_user = await db.users.find_one({"email": user_data["email"]}, {"_id": 0})
+    # Check if user exists by Google email first, then by company email
+    existing_user = await db.users.find_one({"google_email": user_data["email"]}, {"_id": 0})
+    if not existing_user:
+        existing_user = await db.users.find_one({"email": user_data["email"]}, {"_id": 0})
     
     if existing_user:
         user_id = existing_user["user_id"]
-        # Update user info
+        # Update user info and link Google email
         await db.users.update_one(
             {"user_id": user_id},
-            {"$set": {"name": user_data["name"], "picture": user_data.get("picture")}}
+            {"$set": {
+                "name": user_data["name"], 
+                "picture": user_data.get("picture"),
+                "google_email": user_data["email"]  # Link their Google account
+            }}
         )
     else:
-        # Create new user
+        # Create new user with Google account
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         new_user = User(
             user_id=user_id,
-            email=user_data["email"],
+            google_email=user_data["email"],
             name=user_data["name"],
             picture=user_data.get("picture"),
             role="employee"
