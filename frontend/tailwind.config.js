@@ -8,9 +8,15 @@ module.exports = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
-                heading: ['Barlow Condensed', 'sans-serif'],
-                mono: ['JetBrains Mono', 'monospace'],
+                sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+                serif: ['Crimson Pro', 'Georgia', 'Times New Roman', 'serif'],
+            },
+            colors: {
+                // Garza Group Brand Colors
+                keystone: '#4600FF',
+                foundation: '#101820',
+                vertex: '#FF2E63',
+                horizon: '#F5F5F5',
             },
             borderRadius: {
                 lg: 'var(--radius)',
@@ -18,6 +24,10 @@ module.exports = {
                 sm: 'calc(var(--radius) - 4px)'
             },
             colors: {
+                keystone: '#4600FF',
+                foundation: '#101820',
+                vertex: '#FF2E63',
+                horizon: '#F5F5F5',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
                 card: {
