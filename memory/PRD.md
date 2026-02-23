@@ -1,14 +1,29 @@
-# Site Commander - Time Clock Web App PRD
+# Garza Group Recruiting Services (GGRSLLC) - Time Clock PRD
+
+## Company Mission
+"Building people, not just payroll. Developing leaders, not just filling shifts. Strengthening communities, one person at a time."
+
+GGRSLLC staffs janitorial, custodial, facilities & industrial roles across multiple U.S. clients & sites (ABM, Walmart, XAI, LG, Boeing, etc.) - serving first-generation workers, low-income earners, immigrants, and people who've been told they're "just labor" when really they're quiet leaders in the making.
 
 ## Original Problem Statement
 Create a comprehensive web app time clock solution that tracks employee work hours, lunch breaks, and uses geo-fencing to ensure employees are on-site. Include a photo verification feature for authentication. Offer both numeric ID and Google Sign-In options for user convenience. Design the system so that on-site managers can approve time sheets daily or weekly, which are then forwarded to the main office. Ensure that employees and managers can reconcile time sheets weekly, with all data securely logged and managed in Google Sheets. Prioritize security, accuracy, and a streamlined user experience. For a multi-site workforce.
 
-## User Choices
+## User Choices & Brand Guidelines
 - Simple webcam photo capture on clock-in/out
 - Google Sheets API for data sync (credentials provided)
-- 10 work sites with 200m geo-fencing radius
+- 11 real work sites with 200m geo-fencing radius
 - Emergent-managed Google Auth
 - In-app notifications + CSV export as backup
+
+### Brand Colors (ATS Recruiting Palette)
+- Keystone Indigo: #4600FF (primary, hero, buttons)
+- Foundation Blue-Black: #101820 (text, nav, UI)
+- Vertex Magenta: #FF2E63 (energy, CTAs, accents)
+- Horizon White: #F5F5F5 (backgrounds, cards)
+
+### Typography
+- Headlines: Crimson Pro (serif, XCharter-like warmth)
+- Body/UI: System Sans (clarity, offline support)
 
 ## User Personas
 
