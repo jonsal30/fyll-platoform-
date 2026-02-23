@@ -74,19 +74,101 @@ class GGRSTimeClockAPITester:
         return success, response
     
     def test_users(self):
-        """Test /api/users endpoint"""
+        """Test /api/users endpoint - should show 34+ employees"""
         success, response = self.run_test(
-            "Get Users", 
+            "Get Users (34+ employees expected)", 
             "GET", 
             "users", 
             200
         )
         # Print user details if successful
         if success and isinstance(response, list):
-            print(f"   Found {len(response)} users:")
-            for user in response[:5]:  # Show first 5 users
+            print(f"   Found {len(response)} users (Target: 34+)")
+            # Check if we have 34+ employees
+            if len(response) >= 34:
+                print("   ✅ Meets 34+ employee requirement")
+            else:
+                print(f"   ⚠️  Only {len(response)} users found, expected 34+")
+            
+            # Count users with numeric IDs
+            users_with_numeric_ids = [u for u in response if u.get('numeric_id')]
+            print(f"   Users with Numeric IDs: {len(users_with_numeric_ids)}")
+            
+            # Show some sample users
+            print("   Sample users:")
+            for user in response[:5]:
                 print(f"     - {user.get('name', 'Unknown')} (ID: {user.get('numeric_id', 'None')}) - Role: {user.get('role', 'Unknown')}")
+                if user.get('google_email'):
+                    print(f"       Google Email: {user.get('google_email')}")
         return success, response
+
+    def test_payroll_report(self):
+        """Test /api/reports/payroll endpoint"""
+        # Use current week for testing
+        today = datetime.now(timezone.utc)
+        week_start = today - timedelta(days=today.weekday())
+        week_start_str = week_start.strftime('%Y-%m-%d')
+        
+        success, response = self.run_test(
+            "Payroll Report", 
+            "GET", 
+            f"reports/payroll?week_start={week_start_str}", 
+            200
+        )
+        if success and response:
+            print(f"   Week: {response.get('week_start', 'Unknown')}")
+            employees = response.get('employees', [])
+            print(f"   Employees in report: {len(employees)}")
+            if employees:
+                print("   Sample payroll entries (sorted A-Z by last name):")
+                for emp in employees[:3]:
+                    print(f"     - {emp.get('last_name', '')}, {emp.get('first_name', '')} - {emp.get('total_hours', 0)} hrs")
+        return success, response
+
+    def test_audit_trail(self):
+        """Test /api/reports/audit-trail endpoint"""
+        # Use last 30 days for testing
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=30)
+        
+        success, response = self.run_test(
+            "Audit Trail Report", 
+            "GET", 
+            f"reports/audit-trail?start_date={start_date.strftime('%Y-%m-%d')}&end_date={end_date.strftime('%Y-%m-%d')}", 
+            200
+        )
+        if success and response:
+            records = response.get('audit_records', [])
+            print(f"   Audit records found: {len(records)}")
+            if records:
+                print("   Sample audit entries:")
+                for record in records[:3]:
+                    print(f"     - {record.get('employee_name', 'Unknown')} - Status: {record.get('status', 'Unknown')}")
+        return success, response
+
+    def test_csv_exports(self):
+        """Test CSV export endpoints"""
+        week_start = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        
+        # Test payroll CSV
+        success1, _ = self.run_test(
+            "Payroll CSV Export", 
+            "GET", 
+            f"reports/export/payroll-csv?week_start={week_start}", 
+            200
+        )
+        
+        # Test audit CSV  
+        end_date = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        start_date = (datetime.now(timezone.utc) - timedelta(days=30)).strftime('%Y-%m-%d')
+        success2, _ = self.run_test(
+            "Audit CSV Export", 
+            "GET", 
+            f"reports/export/audit-csv?start_date={start_date}&end_date={end_date}", 
+            200
+        )
+        
+        return success1 and success2
 
     def test_sites(self):
         """Test /api/sites endpoint"""
