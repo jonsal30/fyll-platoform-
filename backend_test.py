@@ -149,6 +149,7 @@ def main():
 
     sites_success, sites_data = tester.test_sites()
     status_success, status_data = tester.test_clock_status()
+    users_success, users_data = tester.test_users()
 
     # Print test summary
     print("\n" + "=" * 50)
