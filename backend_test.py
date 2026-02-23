@@ -161,6 +161,9 @@ def main():
     if sites_success and isinstance(sites_data, list):
         print(f"🏢 Sites Available: {len(sites_data)}")
     
+    if users_success and isinstance(users_data, list):
+        print(f"👥 Users Available: {len(users_data)}")
+    
     if status_success and status_data:
         print(f"⏰ Clock Status: {'Clocked In' if status_data.get('is_clocked_in') else 'Not Clocked In'}")
 
