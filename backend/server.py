@@ -59,7 +59,8 @@ class UserRole(BaseModel):
 
 class User(BaseModel):
     user_id: str = Field(default_factory=lambda: f"user_{uuid.uuid4().hex[:12]}")
-    email: str
+    email: Optional[str] = None  # Now optional - employees may not have company email
+    google_email: Optional[str] = None  # Personal Google email for OAuth login
     name: str
     picture: Optional[str] = None
     role: str = "employee"
