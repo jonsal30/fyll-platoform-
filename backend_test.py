@@ -1,12 +1,12 @@
 import requests
 import sys
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
-class TimeClockAPITester:
+class GGRSTimeClockAPITester:
     def __init__(self, base_url="https://workforce-tracker-52.preview.emergentagent.com"):
         self.base_url = base_url
-        self.session_token = "test_session_admin_001"  # Pre-created test token
-        self.numeric_id = "1234"  # Test numeric ID
+        self.session_token = "test_session_admin_001"  # Pre-created admin test token
+        self.adriana_numeric_id = "1001"  # Adriana Hernandez ID from requirements
         self.tests_run = 0
         self.tests_passed = 0
 
