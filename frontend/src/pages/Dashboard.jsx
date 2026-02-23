@@ -250,7 +250,7 @@ const Dashboard = () => {
     return (
       <Layout>
         <div className="flex items-center justify-center h-96">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-keystone" />
         </div>
       </Layout>
     );
@@ -260,11 +260,11 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="max-w-md mx-auto space-y-6 p-4">
+      <div className="max-w-md mx-auto space-y-6 p-4 pb-24 lg:pb-4">
         {/* Status Header */}
         <div className="text-center">
-          <h1 className="font-heading text-3xl font-bold">
-            {clockStatus?.is_clocked_in ? "ON DUTY" : "OFF DUTY"}
+          <h1 className="font-serif text-3xl font-bold text-foundation">
+            {clockStatus?.is_clocked_in ? "On Duty" : "Off Duty"}
           </h1>
           <p className="text-muted-foreground">
             Welcome, {user?.name?.split(" ")[0]}
@@ -273,16 +273,19 @@ const Dashboard = () => {
 
         {/* Time Display */}
         {clockStatus?.is_clocked_in && (
-          <Card className="bg-card border-border">
+          <Card className="bg-white border-0 shadow-lg">
             <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground text-sm mb-2">
-                {isOnLunch ? "ON LUNCH BREAK" : "TIME WORKED"}
+              <p className="text-muted-foreground text-sm mb-2 uppercase tracking-wide">
+                {isOnLunch ? "On Lunch Break" : "Time Worked"}
               </p>
-              <p className="font-mono text-5xl font-bold text-foreground">
+              <p className="font-mono text-5xl font-bold text-foundation">
                 {formatTime(elapsedTime)}
               </p>
               <div className="flex items-center justify-center gap-2 mt-3">
-                <Badge variant={clockStatus.entry?.location_verified ? "default" : "destructive"} className="flex items-center gap-1">
+                <Badge 
+                  variant={clockStatus.entry?.location_verified ? "default" : "destructive"} 
+                  className={`flex items-center gap-1 ${clockStatus.entry?.location_verified ? 'bg-green-500' : ''}`}
+                >
                   {clockStatus.entry?.location_verified ? (
                     <><CheckCircle2 className="w-3 h-3" /> Location Verified</>
                   ) : (
@@ -296,16 +299,16 @@ const Dashboard = () => {
 
         {/* Site Selection (only when not clocked in) */}
         {!clockStatus?.is_clocked_in && (
-          <Card className="bg-card border-border">
+          <Card className="bg-white border-0 shadow-md">
             <CardHeader className="pb-3">
-              <CardTitle className="font-heading text-lg flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary" />
+              <CardTitle className="font-serif text-lg flex items-center gap-2 text-foundation">
+                <MapPin className="w-5 h-5 text-keystone" />
                 Select Work Site
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Select value={selectedSite} onValueChange={setSelectedSite}>
-                <SelectTrigger data-testid="site-select" className="h-12 bg-background">
+                <SelectTrigger data-testid="site-select" className="h-12 bg-horizon border-gray-200">
                   <SelectValue placeholder="Choose a site" />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,22 +329,22 @@ const Dashboard = () => {
         )}
 
         {/* Location Status */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white border-0 shadow-md">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Navigation className="w-5 h-5 text-secondary" />
-                <span className="text-sm">GPS Location</span>
+                <Navigation className="w-5 h-5 text-keystone" />
+                <span className="text-sm text-foundation">GPS Location</span>
               </div>
               {location ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-success glow-success"></div>
+                  <div className="w-2 h-2 rounded-full bg-green-500 glow-success"></div>
                   <span className="text-xs text-muted-foreground font-mono">
                     ±{Math.round(location.accuracy)}m
                   </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-destructive">
+                <div className="flex items-center gap-2 text-vertex">
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-xs">{locationError || "Acquiring..."}</span>
                 </div>
@@ -351,10 +354,10 @@ const Dashboard = () => {
         </Card>
 
         {/* Camera Section */}
-        <Card className="bg-card border-border">
+        <Card className="bg-white border-0 shadow-md">
           <CardHeader className="pb-3">
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <Camera className="w-5 h-5 text-primary" />
+            <CardTitle className="font-serif text-lg flex items-center gap-2 text-foundation">
+              <Camera className="w-5 h-5 text-keystone" />
               Photo Verification
             </CardTitle>
           </CardHeader>
@@ -366,10 +369,10 @@ const Dashboard = () => {
                   autoPlay
                   playsInline
                   muted
-                  className="w-full rounded-sm bg-black aspect-video"
+                  className="w-full rounded bg-foundation aspect-video"
                 />
                 <div className="flex gap-2">
-                  <Button onClick={capturePhoto} className="flex-1 bg-primary">
+                  <Button onClick={capturePhoto} className="flex-1 bg-keystone hover:bg-keystone/90">
                     Capture
                   </Button>
                   <Button onClick={stopCamera} variant="outline" className="flex-1">
@@ -379,12 +382,12 @@ const Dashboard = () => {
               </div>
             ) : capturedPhoto ? (
               <div className="space-y-3">
-                <img src={capturedPhoto} alt="Captured" className="w-full rounded-sm" />
+                <img src={capturedPhoto} alt="Captured" className="w-full rounded" />
                 <div className="flex gap-2">
                   <Button onClick={() => setCapturedPhoto(null)} variant="outline" className="flex-1">
                     Retake
                   </Button>
-                  <div className="flex-1 flex items-center justify-center text-success">
+                  <div className="flex-1 flex items-center justify-center text-green-600">
                     <CheckCircle2 className="w-5 h-5 mr-2" />
                     Ready
                   </div>
@@ -395,10 +398,10 @@ const Dashboard = () => {
                 data-testid="start-camera-btn"
                 onClick={startCamera} 
                 variant="outline" 
-                className="w-full h-24 border-dashed flex flex-col gap-2"
+                className="w-full h-24 border-dashed border-gray-300 flex flex-col gap-2 hover:bg-horizon"
               >
-                <Camera className="w-8 h-8" />
-                <span>Tap to take photo</span>
+                <Camera className="w-8 h-8 text-keystone" />
+                <span className="text-foundation">Tap to take photo</span>
               </Button>
             )}
             <canvas ref={canvasRef} className="hidden" />
@@ -415,7 +418,7 @@ const Dashboard = () => {
                   data-testid="lunch-start-btn"
                   onClick={() => handleLunch("start")}
                   variant="outline"
-                  className="w-full mb-4 h-12 flex items-center gap-2"
+                  className="w-full mb-4 h-12 flex items-center gap-2 border-gray-300"
                 >
                   <Coffee className="w-5 h-5" />
                   Start Lunch Break
@@ -425,7 +428,7 @@ const Dashboard = () => {
                 <Button
                   data-testid="lunch-end-btn"
                   onClick={() => handleLunch("end")}
-                  className="w-full mb-4 h-12 bg-secondary flex items-center gap-2"
+                  className="w-full mb-4 h-12 bg-keystone flex items-center gap-2"
                 >
                   <Coffee className="w-5 h-5" />
                   End Lunch Break
@@ -437,14 +440,14 @@ const Dashboard = () => {
                 data-testid="clock-out-btn"
                 onClick={handleClockOut}
                 disabled={clockLoading || isOnLunch}
-                className="clock-button w-40 h-40 rounded-full border-4 border-muted bg-card flex flex-col items-center justify-center text-destructive hover:border-destructive transition-all disabled:opacity-50"
+                className="clock-button w-40 h-40 rounded-full border-4 border-vertex bg-white flex flex-col items-center justify-center text-vertex hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {clockLoading ? (
                   <Loader2 className="w-8 h-8 animate-spin" />
                 ) : (
                   <>
                     <LogOut className="w-10 h-10 mb-2" />
-                    <span className="font-heading text-xl font-bold">CLOCK OUT</span>
+                    <span className="font-serif text-xl font-bold">Clock Out</span>
                   </>
                 )}
               </button>
@@ -454,21 +457,21 @@ const Dashboard = () => {
               data-testid="clock-in-btn"
               onClick={handleClockIn}
               disabled={clockLoading || !location || !selectedSite}
-              className="clock-button w-44 h-44 rounded-full border-4 border-primary bg-card flex flex-col items-center justify-center text-primary hover:glow-primary transition-all disabled:opacity-50 disabled:border-muted"
+              className="clock-button w-44 h-44 rounded-full border-4 border-keystone bg-white flex flex-col items-center justify-center text-keystone hover:shadow-lg hover:glow-keystone transition-all disabled:opacity-50 disabled:border-gray-300 disabled:text-gray-400"
             >
               {clockLoading ? (
                 <Loader2 className="w-8 h-8 animate-spin" />
               ) : (
                 <>
                   <Clock className="w-12 h-12 mb-2" />
-                  <span className="font-heading text-2xl font-bold">CLOCK IN</span>
+                  <span className="font-serif text-2xl font-bold">Clock In</span>
                 </>
               )}
             </button>
           )}
 
           {!location && !clockStatus?.is_clocked_in && (
-            <p className="text-xs text-destructive mt-4">
+            <p className="text-xs text-vertex mt-4">
               Waiting for GPS location...
             </p>
           )}
@@ -476,14 +479,14 @@ const Dashboard = () => {
 
         {/* Current Site Info */}
         {clockStatus?.is_clocked_in && clockStatus.site && (
-          <Card className="bg-card border-t-2 border-t-primary border-border">
+          <Card className="bg-white border-l-4 border-l-keystone border-0 shadow-md">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-heading text-lg font-semibold">{clockStatus.site.name}</p>
+                  <p className="font-serif text-lg font-semibold text-foundation">{clockStatus.site.name}</p>
                   <p className="text-xs text-muted-foreground">{clockStatus.site.address}</p>
                 </div>
-                <Badge variant="secondary" className="font-mono text-xs">
+                <Badge variant="outline" className="font-mono text-xs border-keystone/30 text-keystone">
                   {clockStatus.site.radius_meters}m
                 </Badge>
               </div>
