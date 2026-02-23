@@ -1138,11 +1138,346 @@ async def get_sheets_status(request: Request):
         "spreadsheet_id": settings.get("spreadsheet_id") if settings else None
     }
 
+# ==================== PAYROLL REPORT ENDPOINTS ====================
+
+@api_router.get("/reports/payroll")
+async def get_payroll_report(request: Request, week_start: str, site_id: Optional[str] = None):
+    """Get payroll report for a week - sorted by Last Name, First Name A-Z"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    week_start_dt = datetime.fromisoformat(week_start.replace('Z', '+00:00'))
+    week_end_dt = week_start_dt + timedelta(days=7)
+    
+    # Build query
+    query = {
+        "clock_in": {"$gte": week_start_dt.isoformat(), "$lt": week_end_dt.isoformat()}
+    }
+    if site_id:
+        query["site_id"] = site_id
+    
+    entries = await db.time_entries.find(query, {"_id": 0}).to_list(10000)
+    
+    # Group by employee
+    employee_hours = {}
+    for entry in entries:
+        uid = entry["user_id"]
+        if uid not in employee_hours:
+            employee_hours[uid] = {
+                "total_hours": 0,
+                "entries": [],
+                "lunches_taken": 0,
+                "days_worked": set()
+            }
+        employee_hours[uid]["total_hours"] += entry.get("total_hours", 0) or 0
+        employee_hours[uid]["entries"].append(entry)
+        if entry.get("lunch_start") and entry.get("lunch_end"):
+            employee_hours[uid]["lunches_taken"] += 1
+        if entry.get("clock_in"):
+            employee_hours[uid]["days_worked"].add(entry["clock_in"][:10])
+    
+    # Get employee details and sort by last name, first name
+    result = []
+    for uid, data in employee_hours.items():
+        emp = await db.users.find_one({"user_id": uid}, {"_id": 0})
+        if emp:
+            name_parts = emp.get("name", "").split()
+            last_name = name_parts[-1] if name_parts else ""
+            first_name = " ".join(name_parts[:-1]) if len(name_parts) > 1 else ""
+            
+            result.append({
+                "user_id": uid,
+                "last_name": last_name,
+                "first_name": first_name,
+                "full_name": emp.get("name"),
+                "numeric_id": emp.get("numeric_id"),
+                "total_hours": round(data["total_hours"], 2),
+                "days_worked": len(data["days_worked"]),
+                "lunches_taken": data["lunches_taken"],
+                "site_id": entries[0].get("site_id") if entries else None
+            })
+    
+    # Sort by last name, then first name A-Z
+    result.sort(key=lambda x: (x["last_name"].lower(), x["first_name"].lower()))
+    
+    return {
+        "week_start": week_start,
+        "week_end": week_end_dt.isoformat(),
+        "site_id": site_id,
+        "employees": result,
+        "total_employees": len(result),
+        "total_hours": sum(e["total_hours"] for e in result)
+    }
+
+@api_router.get("/reports/site-weekly/{site_id}")
+async def get_site_weekly_report(site_id: str, request: Request, week_start: str):
+    """Get weekly report for a specific site - matches ABM-XAi-Tul format"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    site = await db.work_sites.find_one({"site_id": site_id}, {"_id": 0})
+    if not site:
+        raise HTTPException(status_code=404, detail="Site not found")
+    
+    week_start_dt = datetime.fromisoformat(week_start.replace('Z', '+00:00'))
+    week_end_dt = week_start_dt + timedelta(days=7)
+    
+    # Get all entries for site/week
+    entries = await db.time_entries.find({
+        "site_id": site_id,
+        "clock_in": {"$gte": week_start_dt.isoformat(), "$lt": week_end_dt.isoformat()}
+    }, {"_id": 0}).to_list(10000)
+    
+    # Build employee data with daily breakdown
+    employee_data = {}
+    days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    
+    for entry in entries:
+        uid = entry["user_id"]
+        if uid not in employee_data:
+            emp = await db.users.find_one({"user_id": uid}, {"_id": 0})
+            name = emp.get("name", "Unknown") if emp else "Unknown"
+            name_parts = name.split()
+            employee_data[uid] = {
+                "name": name,
+                "last_name": name_parts[-1] if name_parts else "",
+                "first_name": " ".join(name_parts[:-1]) if len(name_parts) > 1 else "",
+                "numeric_id": emp.get("numeric_id") if emp else "",
+                "daily_hours": {d: 0 for d in days},
+                "total_hours": 0,
+                "lunches": []
+            }
+        
+        # Determine day of week
+        if entry.get("clock_in"):
+            dt = datetime.fromisoformat(entry["clock_in"].replace('Z', '+00:00'))
+            day_name = days[dt.weekday() + 1 if dt.weekday() < 6 else 0]  # Adjust for Sun start
+            hours = entry.get("total_hours", 0) or 0
+            employee_data[uid]["daily_hours"][day_name] += hours
+            employee_data[uid]["total_hours"] += hours
+            
+            # Track lunches
+            if entry.get("lunch_start") and entry.get("lunch_end"):
+                employee_data[uid]["lunches"].append({
+                    "date": entry["clock_in"][:10],
+                    "start": entry["lunch_start"][11:16] if entry.get("lunch_start") else None,
+                    "end": entry["lunch_end"][11:16] if entry.get("lunch_end") else None
+                })
+    
+    # Convert to sorted list
+    result = list(employee_data.values())
+    result.sort(key=lambda x: (x["last_name"].lower(), x["first_name"].lower()))
+    
+    return {
+        "site": site,
+        "week_start": week_start,
+        "week_end": week_end_dt.isoformat(),
+        "employees": result,
+        "summary": {
+            "total_employees": len(result),
+            "total_hours": sum(e["total_hours"] for e in result),
+            "total_lunches": sum(len(e["lunches"]) for e in result)
+        }
+    }
+
+@api_router.get("/reports/audit-trail")
+async def get_audit_trail(request: Request, start_date: str, end_date: str, site_id: Optional[str] = None):
+    """Get audit trail for compliance - shows all approvals and lunches"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get all timesheets in range
+    query = {
+        "week_start": {"$gte": start_date, "$lte": end_date}
+    }
+    if site_id:
+        query["site_id"] = site_id
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("approved_at", -1).to_list(1000)
+    
+    result = []
+    for ts in timesheets:
+        emp = await db.users.find_one({"user_id": ts["user_id"]}, {"_id": 0})
+        mgr = await db.users.find_one({"user_id": ts.get("manager_id")}, {"_id": 0}) if ts.get("manager_id") else None
+        site = await db.work_sites.find_one({"site_id": ts["site_id"]}, {"_id": 0})
+        
+        # Get entries for lunch data
+        entries = await db.time_entries.find(
+            {"entry_id": {"$in": ts.get("entries", [])}},
+            {"_id": 0}
+        ).to_list(100)
+        
+        lunches = []
+        for entry in entries:
+            if entry.get("lunch_start") and entry.get("lunch_end"):
+                lunches.append({
+                    "date": entry.get("clock_in", "")[:10],
+                    "start": entry.get("lunch_start", "")[11:16],
+                    "end": entry.get("lunch_end", "")[11:16],
+                    "duration_minutes": None  # Could calculate
+                })
+        
+        result.append({
+            "timesheet_id": ts["timesheet_id"],
+            "employee_name": emp.get("name") if emp else "Unknown",
+            "employee_id": emp.get("numeric_id") if emp else None,
+            "site_name": site.get("name") if site else "Unknown",
+            "week_start": ts.get("week_start"),
+            "week_end": ts.get("week_end"),
+            "total_hours": ts.get("total_hours"),
+            "status": ts.get("status"),
+            "employee_submitted_at": ts.get("created_at"),
+            "manager_name": mgr.get("name") if mgr else None,
+            "manager_approved_at": ts.get("approved_at"),
+            "manager_notes": ts.get("notes"),
+            "lunches_taken": lunches
+        })
+    
+    return {
+        "audit_records": result,
+        "total_records": len(result),
+        "date_range": {"start": start_date, "end": end_date}
+    }
+
+@api_router.get("/reports/export/payroll-csv")
+async def export_payroll_csv(request: Request, week_start: str, site_id: Optional[str] = None):
+    """Export payroll data as CSV for direct deposit upload"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Get payroll data
+    week_start_dt = datetime.fromisoformat(week_start.replace('Z', '+00:00'))
+    week_end_dt = week_start_dt + timedelta(days=7)
+    
+    query = {
+        "clock_in": {"$gte": week_start_dt.isoformat(), "$lt": week_end_dt.isoformat()}
+    }
+    if site_id:
+        query["site_id"] = site_id
+    
+    entries = await db.time_entries.find(query, {"_id": 0}).to_list(10000)
+    
+    # Group by employee
+    employee_hours = {}
+    for entry in entries:
+        uid = entry["user_id"]
+        if uid not in employee_hours:
+            employee_hours[uid] = 0
+        employee_hours[uid] += entry.get("total_hours", 0) or 0
+    
+    # Build CSV sorted by last name
+    employees = []
+    for uid, hours in employee_hours.items():
+        emp = await db.users.find_one({"user_id": uid}, {"_id": 0})
+        if emp:
+            name_parts = emp.get("name", "").split()
+            employees.append({
+                "last_name": name_parts[-1] if name_parts else "",
+                "first_name": " ".join(name_parts[:-1]) if len(name_parts) > 1 else "",
+                "numeric_id": emp.get("numeric_id", ""),
+                "total_hours": round(hours, 2)
+            })
+    
+    employees.sort(key=lambda x: (x["last_name"].lower(), x["first_name"].lower()))
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Last Name", "First Name", "Employee ID", "Total Hours", "Week Starting"])
+    
+    for emp in employees:
+        writer.writerow([
+            emp["last_name"],
+            emp["first_name"],
+            emp["numeric_id"],
+            emp["total_hours"],
+            week_start[:10]
+        ])
+    
+    output.seek(0)
+    site_name = ""
+    if site_id:
+        site = await db.work_sites.find_one({"site_id": site_id}, {"_id": 0})
+        site_name = f"_{site.get('name', '').replace(' ', '_')}" if site else ""
+    
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=payroll{site_name}_{week_start[:10]}.csv"}
+    )
+
+@api_router.get("/reports/export/audit-csv")
+async def export_audit_csv(request: Request, start_date: str, end_date: str, site_id: Optional[str] = None):
+    """Export audit trail as CSV for compliance records"""
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    if user.get("role") not in ["manager", "admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    query = {"week_start": {"$gte": start_date, "$lte": end_date}}
+    if site_id:
+        query["site_id"] = site_id
+    
+    timesheets = await db.timesheets.find(query, {"_id": 0}).sort("approved_at", -1).to_list(1000)
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Timesheet ID", "Employee Name", "Employee ID", "Site", 
+        "Week Start", "Week End", "Total Hours", "Status",
+        "Submitted At", "Manager Name", "Approved At", "Manager Notes"
+    ])
+    
+    for ts in timesheets:
+        emp = await db.users.find_one({"user_id": ts["user_id"]}, {"_id": 0})
+        mgr = await db.users.find_one({"user_id": ts.get("manager_id")}, {"_id": 0}) if ts.get("manager_id") else None
+        site = await db.work_sites.find_one({"site_id": ts["site_id"]}, {"_id": 0})
+        
+        writer.writerow([
+            ts.get("timesheet_id"),
+            emp.get("name") if emp else "Unknown",
+            emp.get("numeric_id") if emp else "",
+            site.get("name") if site else "Unknown",
+            ts.get("week_start", "")[:10],
+            ts.get("week_end", "")[:10],
+            ts.get("total_hours"),
+            ts.get("status"),
+            ts.get("created_at", "")[:19] if ts.get("created_at") else "",
+            mgr.get("name") if mgr else "",
+            ts.get("approved_at", "")[:19] if ts.get("approved_at") else "",
+            ts.get("notes", "")
+        ])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=audit_trail_{start_date}_{end_date}.csv"}
+    )
+
 # ==================== ROOT ENDPOINT ====================
 
 @api_router.get("/")
 async def root():
-    return {"message": "Site Commander API", "version": "1.0.0"}
+    return {"message": "Garza Group Time Clock API", "version": "1.0.0"}
 
 # Include the router
 app.include_router(api_router)
