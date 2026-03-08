@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { 
   Clock, FileText, Users, Settings, LogOut, Menu, X, 
-  Bell, Home, ChevronRight
+  Bell, Home, ChevronRight, Briefcase, Building2, BarChart3
 } from "lucide-react";
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
@@ -42,7 +42,10 @@ const Layout = ({ children }) => {
     { to: "/dashboard", icon: Home, label: "Clock" },
     { to: "/timesheet", icon: FileText, label: "Timesheet" },
     ...(user?.role === "manager" || user?.role === "admin" 
-      ? [{ to: "/manager", icon: Users, label: "Approvals" }] 
+      ? [
+          { to: "/manager", icon: Users, label: "Approvals" },
+          { to: "/recruiting", icon: Briefcase, label: "Recruiting" }
+        ] 
       : []),
     ...(user?.role === "admin" 
       ? [{ to: "/admin", icon: Settings, label: "Admin" }] 

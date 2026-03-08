@@ -43,10 +43,16 @@ GOOGLE_SCOPES = [
 ]
 
 # Create the main app
-app = FastAPI(title="Site Commander - Time Clock API")
+app = FastAPI(title="GGRS HR Platform API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
+
+# Import and include module routers
+from modules.ats import router as ats_router
+from modules.clients import router as clients_router
+from modules.hr import router as hr_router
+from modules.admin_settings import router as admin_settings_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -1488,6 +1494,12 @@ async def root():
 
 # Include the router
 app.include_router(api_router)
+
+# Include module routers
+app.include_router(ats_router)
+app.include_router(clients_router)
+app.include_router(hr_router)
+app.include_router(admin_settings_router)
 
 # CORS middleware
 app.add_middleware(

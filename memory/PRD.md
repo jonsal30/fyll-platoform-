@@ -1,29 +1,105 @@
-# Garza Group Recruiting Services (GGRSLLC) - Time Clock PRD
+# Garza Group HR Platform - PRD
 
 ## Company Mission
 "Building people, not just payroll. Developing leaders, not just filling shifts. Strengthening communities, one person at a time."
 
-GGRSLLC staffs janitorial, custodial, facilities & industrial roles across multiple U.S. clients & sites (ABM, Walmart, XAI, LG, Boeing, etc.) - serving first-generation workers, low-income earners, immigrants, and people who've been told they're "just labor" when really they're quiet leaders in the making.
+## Platform Overview
+Complete HR Management Platform for GGRSLLC - a people-first staffing company serving janitorial, custodial, facilities & industrial roles across ABM, Walmart, XAI, LG, Boeing, and other clients.
 
-## Original Problem Statement
-Create a comprehensive web app time clock solution that tracks employee work hours, lunch breaks, and uses geo-fencing to ensure employees are on-site. Include a photo verification feature for authentication. Offer both numeric ID and Google Sign-In options for user convenience. Design the system so that on-site managers can approve time sheets daily or weekly, which are then forwarded to the main office. Ensure that employees and managers can reconcile time sheets weekly, with all data securely logged and managed in Google Sheets. Prioritize security, accuracy, and a streamlined user experience. For a multi-site workforce.
+## Modules Implemented
 
-## User Choices & Brand Guidelines
-- Simple webcam photo capture on clock-in/out
-- Google Sheets API for data sync (credentials provided)
-- 11 real work sites with 200m geo-fencing radius
-- Emergent-managed Google Auth
-- In-app notifications + CSV export as backup
+### 1. Time Clock (Complete)
+- Clock in/out with photo verification
+- GPS geo-fencing (200m radius)
+- Lunch break tracking
+- Timesheet submission and approval
+- Manager approval workflow
+- CSV export for payroll
 
-### Brand Colors (ATS Recruiting Palette)
-- Keystone Indigo: #4600FF (primary, hero, buttons)
-- Foundation Blue-Black: #101820 (text, nav, UI)
-- Vertex Magenta: #FF2E63 (energy, CTAs, accents)
-- Horizon White: #F5F5F5 (backgrounds, cards)
+### 2. ATS - Applicant Tracking System (Complete)
+- Job posting creation and management
+- Applicant pipeline (New → Screening → Interview → Offer → Hired)
+- Stage tracking with history
+- Offer letter creation
+- Onboarding checklists
+- Pipeline statistics and conversion rates
 
-### Typography
-- Headlines: Crimson Pro (serif, XCharter-like warmth)
-- Body/UI: System Sans (clarity, offline support)
+### 3. Client Portal (Backend Complete)
+- Client management with contacts
+- Staffing requests workflow
+- Invoice generation and tracking
+- Engagement logging
+- Site assignments
+
+### 4. HR Management (Backend Complete)
+- Incident reporting
+- Performance reviews
+- Employee feedback system
+- HR ticketing system
+- Employee profiles and documents
+
+### 5. Admin Settings (Backend Complete)
+- White-label branding configuration
+- Module toggle (enable/disable features)
+- Integration settings (Google Sheets, Indeed, SendGrid)
+- Time clock configuration
+- Executive dashboard KPIs
+
+## Data Seeded
+- 34 employees from roster with unique numeric IDs (1001-1034)
+- 11 work sites with real addresses and coordinates
+- Managers and admin accounts
+
+## API Endpoints
+
+### Time Clock
+- POST /api/clock/in, /api/clock/out, /api/clock/lunch
+- GET /api/clock/status, /api/entries, /api/timesheets
+- POST /api/timesheets/submit, /api/timesheets/{id}/approve
+
+### ATS
+- GET/POST /api/ats/jobs, /api/ats/applicants
+- POST /api/ats/jobs/{id}/publish
+- POST /api/ats/applicants/{id}/stage
+- POST /api/ats/offers
+- GET /api/ats/pipeline/stats
+
+### Clients
+- GET/POST /api/clients
+- POST /api/clients/requests
+- POST /api/clients/invoices
+
+### HR
+- GET/POST /api/hr/incidents, /api/hr/reviews, /api/hr/feedback
+- GET/POST /api/hr/tickets
+- GET /api/hr/employees/{id}/profile
+
+### Admin
+- GET/PUT /api/admin/settings
+- PUT /api/admin/settings/branding
+- PUT /api/admin/settings/integrations
+- GET /api/admin/dashboard/executive
+
+## Frontend Pages
+- /login - Employee ID + Google Sign-In
+- /dashboard - Clock in/out interface
+- /timesheet - Weekly timesheet view
+- /manager - Approval dashboard
+- /recruiting - ATS with jobs and applicants
+- /admin - Sites, Users, Integrations management
+
+## Next Steps (P1)
+1. Build Client Portal frontend pages
+2. Build HR Management frontend pages
+3. Add Executive Dashboard with charts
+4. Indeed API integration for job posting
+5. SendGrid for email notifications
+
+## White-Label Configuration
+- Company name, logo, tagline
+- Color palette (Keystone #4600FF, Vertex #FF2E63, Foundation #101820, Horizon #F5F5F5)
+- Font configuration
+- Module visibility toggles
 
 ## User Personas
 

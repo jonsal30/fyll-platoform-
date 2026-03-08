@@ -11,6 +11,7 @@ import ManagerDashboard from "./pages/ManagerDashboard";
 import ApprovalPage from "./pages/ApprovalPage";
 import AdminPanel from "./pages/AdminPanel";
 import AuthCallback from "./pages/AuthCallback";
+import ATS from "./pages/ATS";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -128,6 +129,12 @@ function AppRouter() {
       <Route path="/manager" element={
         <ProtectedRoute allowedRoles={["manager", "admin"]}>
           <ManagerDashboard />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/recruiting" element={
+        <ProtectedRoute allowedRoles={["manager", "admin"]}>
+          <ATS />
         </ProtectedRoute>
       } />
       
