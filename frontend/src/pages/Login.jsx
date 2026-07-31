@@ -20,7 +20,10 @@ import {
 import { User, KeyRound } from "lucide-react";
 
 const Brand = () => (
-  <div className="inline-flex flex-col items-center" aria-label="GH Service Group">
+  <div
+    className="inline-flex flex-col items-center"
+    aria-label="GH Service Group"
+  >
     <div className="bg-white rounded-xl px-5 py-3 shadow-lg">
       <img
         src="/gh-service-group-logo.webp"
