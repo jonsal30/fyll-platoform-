@@ -104,6 +104,20 @@ class TimeEntry(BaseModel):
     status: str = "active"  # active, completed, pending_approval, approved, rejected
     notes: Optional[str] = None
 
+class AttendanceSession(BaseModel):
+    attendance_id: str = Field(default_factory=lambda: f"att_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    site_id: Optional[str] = None
+    training_day: int
+    status: str = "awaiting_work_start"
+    shuttle_check_in: datetime
+    work_start: Optional[datetime] = None
+    work_end: Optional[datetime] = None
+    browne_check_out: Optional[datetime] = None
+    window_expires_at: datetime
+    events: List[Dict[str, Any]] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Timesheet(BaseModel):
     timesheet_id: str = Field(default_factory=lambda: f"ts_{uuid.uuid4().hex[:10]}")
     user_id: str
@@ -146,6 +160,13 @@ class ClockOutRequest(BaseModel):
 class LunchRequest(BaseModel):
     entry_id: str
     action: str  # start or end
+
+class AttendanceEventRequest(BaseModel):
+    event_type: str
+    latitude: float
+    longitude: float
+    accuracy: Optional[float] = None
+    site_id: Optional[str] = None
 
 class ApprovalRequest(BaseModel):
     timesheet_id: str
@@ -368,6 +389,127 @@ async def logout(request: Request, response: Response):
     
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out"}
+
+# ==================== BROWNSVILLE ATTENDANCE WORKFLOW ====================
+
+BROWNE_EVENT_TYPES = {
+    "shuttle_check_in",
+    "work_start",
+    "lunch_out",
+    "lunch_in",
+    "work_end",
+    "browne_check_out",
+}
+
+ATTENDANCE_SEQUENCE = {
+    "awaiting_work_start": "work_start",
+    "working": "lunch_out",
+    "on_lunch": "lunch_in",
+    "returned_to_work": "work_end",
+    "awaiting_browne_return": "browne_check_out",
+}
+
+@api_router.get("/attendance/status")
+async def attendance_status(request: Request):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = await db.attendance_sessions.find_one(
+        {"user_id": user["user_id"], "status": {"$ne": "completed"}},
+        {"_id": 0}
+    )
+    completed_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    return {
+        "session": session,
+        "completed_days": completed_days,
+        "location_capture_required": completed_days < 5,
+        "next_event": "shuttle_check_in" if not session else ATTENDANCE_SEQUENCE.get(session["status"]),
+    }
+
+@api_router.post("/attendance/event")
+async def record_attendance_event(request: Request, data: AttendanceEventRequest):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if data.event_type not in BROWNE_EVENT_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported attendance event")
+
+    now = datetime.now(timezone.utc)
+    active = await db.attendance_sessions.find_one(
+        {"user_id": user["user_id"], "status": {"$ne": "completed"}},
+        {"_id": 0}
+    )
+    completed_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    training_day = min(completed_days + 1, 5)
+    capture_for_geofence = completed_days < 5
+    event = {
+        "event_type": data.event_type,
+        "recorded_at": now.isoformat(),
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "accuracy": data.accuracy,
+        "capture_for_geofence": capture_for_geofence,
+    }
+
+    browne_lat = os.environ.get("BROWNE_LATITUDE")
+    browne_lon = os.environ.get("BROWNE_LONGITUDE")
+    browne_radius = int(os.environ.get("BROWNE_RADIUS_METERS", "400"))
+    if data.event_type in {"shuttle_check_in", "browne_check_out"} and browne_lat and browne_lon:
+        distance = calculate_distance(float(browne_lat), float(browne_lon), data.latitude, data.longitude)
+        event["distance_from_browne_meters"] = round(distance, 1)
+        event["within_browne_geofence"] = distance <= browne_radius
+
+    if data.event_type == "shuttle_check_in":
+        if active:
+            raise HTTPException(status_code=400, detail="An attendance day is already open")
+        session = AttendanceSession(
+            user_id=user["user_id"],
+            site_id=data.site_id,
+            training_day=training_day,
+            shuttle_check_in=now,
+            window_expires_at=now + timedelta(hours=10),
+            events=[event],
+        )
+        await db.attendance_sessions.insert_one(session.model_dump())
+        return session.model_dump()
+
+    if not active:
+        raise HTTPException(status_code=400, detail="Check in for the Browne shuttle first")
+    expires_at = active["window_expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if now > expires_at and data.event_type != "browne_check_out":
+        raise HTTPException(status_code=400, detail="The 10-hour punch window has expired; contact a manager")
+
+    expected = ATTENDANCE_SEQUENCE.get(active["status"])
+    if data.event_type == "work_end" and active["status"] == "working":
+        expected = "work_end"
+    if data.event_type != expected:
+        raise HTTPException(status_code=400, detail=f"Next required action is {expected or 'manager review'}")
+
+    updates = {"$push": {"events": event}}
+    if data.event_type == "work_start":
+        updates["$set"] = {"status": "working", "work_start": now.isoformat()}
+    elif data.event_type == "lunch_out":
+        updates["$set"] = {"status": "on_lunch"}
+    elif data.event_type == "lunch_in":
+        updates["$set"] = {"status": "returned_to_work"}
+    elif data.event_type == "work_end":
+        updates["$set"] = {"status": "awaiting_browne_return", "work_end": now.isoformat()}
+    elif data.event_type == "browne_check_out":
+        updates["$set"] = {"status": "completed", "browne_check_out": now.isoformat()}
+
+    await db.attendance_sessions.update_one({"attendance_id": active["attendance_id"]}, updates)
+    return await db.attendance_sessions.find_one({"attendance_id": active["attendance_id"]}, {"_id": 0})
 
 # ==================== TIME CLOCK ENDPOINTS ====================
 
