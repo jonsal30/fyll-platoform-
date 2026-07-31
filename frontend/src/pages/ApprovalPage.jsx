@@ -14,7 +14,15 @@ import {
   Calendar, Loader2, FileText, Camera
 } from "lucide-react";
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+const Brand = () => (
+  <div className="inline-flex items-center gap-3" aria-label="GH Service Group">
+    <div className="w-12 h-12 rounded-xl bg-keystone text-white flex items-center justify-center font-black">GH</div>
+    <div className="text-left leading-tight">
+      <div className="font-serif text-xl font-bold text-foundation">GH Service Group</div>
+      <div className="text-xs uppercase tracking-widest text-foundation/50">Workforce Portal</div>
+    </div>
+  </div>
+);
 
 const ApprovalPage = () => {
   const { timesheetId } = useParams();
@@ -132,12 +140,8 @@ const ApprovalPage = () => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center py-6">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group" 
-            className="h-16 mx-auto mb-4 object-contain"
-          />
-          <p className="text-muted-foreground">Timesheet Approval</p>
+          <Brand />
+          <p className="text-muted-foreground mt-3">Timesheet Approval</p>
         </div>
 
         {/* Status Banner */}
