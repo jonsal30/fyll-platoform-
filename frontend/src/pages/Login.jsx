@@ -20,17 +20,16 @@ import {
 import { User, KeyRound } from "lucide-react";
 
 const Brand = () => (
-  <div className="inline-flex items-center gap-3" aria-label="GH Service Group">
-    <div className="w-14 h-14 rounded-xl bg-keystone text-white flex items-center justify-center font-black text-xl shadow-lg">
-      GH
+  <div className="inline-flex flex-col items-center" aria-label="GH Service Group">
+    <div className="bg-white rounded-xl px-5 py-3 shadow-lg">
+      <img
+        src="/gh-service-group-logo.webp"
+        alt="GH Service Group — Veteran Owned. Service Driven."
+        className="w-72 max-w-full h-auto"
+      />
     </div>
-    <div className="text-left leading-tight">
-      <div className="font-serif text-2xl font-bold text-white">
-        GH Service Group
-      </div>
-      <div className="text-xs tracking-[0.2em] uppercase text-horizon/70">
-        Employee Workforce Portal
-      </div>
+    <div className="text-xs tracking-[0.2em] uppercase text-horizon/70 mt-3">
+      Employee Workforce Portal
     </div>
   </div>
 );
