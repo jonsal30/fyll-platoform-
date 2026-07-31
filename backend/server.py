@@ -16,6 +16,7 @@ import io
 import csv
 import base64
 import warnings
+from passlib.context import CryptContext
 
 # Google Sheets imports
 from google_auth_oauthlib.flow import Flow
@@ -43,7 +44,7 @@ GOOGLE_SCOPES = [
 ]
 
 # Create the main app
-app = FastAPI(title="GGRS HR Platform API")
+app = FastAPI(title="GH Service Group Workforce Platform API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -57,6 +58,7 @@ from modules.admin_settings import router as admin_settings_router
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ==================== MODELS ====================
 
@@ -71,6 +73,7 @@ class User(BaseModel):
     picture: Optional[str] = None
     role: str = "employee"
     numeric_id: Optional[str] = None
+    pin_hash: Optional[str] = None
     assigned_sites: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -161,9 +164,11 @@ class UpdateUserRequest(BaseModel):
     role: Optional[str] = None
     assigned_sites: Optional[List[str]] = None
     numeric_id: Optional[str] = None
+    pin: Optional[str] = None
 
 class NumericLoginRequest(BaseModel):
     numeric_id: str
+    pin: str
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -313,11 +318,12 @@ async def create_session(request: Request, response: Response):
 
 @api_router.post("/auth/numeric-login")
 async def numeric_login(request: NumericLoginRequest, response: Response):
-    """Login with numeric ID"""
+    """Login with employee ID and private PIN."""
     user = await db.users.find_one({"numeric_id": request.numeric_id}, {"_id": 0})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Employee ID not found")
+    pin_hash = user.get("pin_hash") if user else None
+
+    if not user or not pin_hash or not pwd_context.verify(request.pin, pin_hash):
+        raise HTTPException(status_code=401, detail="Invalid Employee ID or PIN")
     
     # Create session
     session_token = f"st_{uuid.uuid4().hex}"
@@ -853,7 +859,7 @@ async def get_users(request: Request):
     if user.get("role") not in ["manager", "admin"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    users = await db.users.find({}, {"_id": 0}).to_list(1000)
+    users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(1000)
     return users
 
 @api_router.put("/users/{user_id}")
@@ -867,9 +873,14 @@ async def update_user(user_id: str, request: Request, data: UpdateUserRequest):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    pin = update_data.pop("pin", None)
+    if pin is not None:
+        if not (4 <= len(pin) <= 12) or not pin.isdigit():
+            raise HTTPException(status_code=400, detail="PIN must contain 4 to 12 digits")
+        update_data["pin_hash"] = pwd_context.hash(pin)
     
     await db.users.update_one({"user_id": user_id}, {"$set": update_data})
-    return await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return await db.users.find_one({"user_id": user_id}, {"_id": 0, "pin_hash": 0})
 
 # ==================== NOTIFICATION ENDPOINTS ====================
 
@@ -1490,7 +1501,7 @@ async def export_audit_csv(request: Request, start_date: str, end_date: str, sit
 
 @api_router.get("/")
 async def root():
-    return {"message": "Garza Group Time Clock API", "version": "1.0.0"}
+    return {"message": "GH Service Group Workforce Platform API", "version": "1.1.0"}
 
 # Include the router
 app.include_router(api_router)
@@ -1505,7 +1516,7 @@ app.include_router(admin_settings_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
