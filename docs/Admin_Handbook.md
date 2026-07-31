@@ -1,4 +1,4 @@
-# GGRS Time Clock - Admin Handbook
+# GHSG Time Clock - Admin Handbook
 
 ## Administrator Guide
 
@@ -223,10 +223,10 @@ MongoDB data is the source of truth. Regular backups recommended.
 ## Support
 
 For technical issues: Contact Emergent support
-For business questions: Contact GGRS HQ
+For business questions: Contact GHSG Support
 
 ---
 
 *"We may be small. But we build like we're here forever."*
 
-© 2026 Garza Group Recruiting Services, LLC
+© 2026 GH Service Group LLC
