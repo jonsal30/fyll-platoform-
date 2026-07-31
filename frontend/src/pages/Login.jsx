@@ -9,12 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { User, KeyRound } from "lucide-react";
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+const Brand = () => (
+  <div className="inline-flex items-center gap-3" aria-label="GH Service Group">
+    <div className="w-14 h-14 rounded-xl bg-keystone text-white flex items-center justify-center font-black text-xl shadow-lg">GH</div>
+    <div className="text-left leading-tight">
+      <div className="font-serif text-2xl font-bold text-white">GH Service Group</div>
+      <div className="text-xs tracking-[0.2em] uppercase text-horizon/70">Employee Workforce Portal</div>
+    </div>
+  </div>
+);
 
 const Login = () => {
   const navigate = useNavigate();
   const { user, login } = useAuth();
   const [numericId, setNumericId] = useState("");
+  const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -33,13 +42,14 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await axios.post(`${API}/auth/numeric-login`, {
-        numeric_id: numericId
+        numeric_id: numericId,
+        pin
       });
       login(response.data);
       toast.success("Welcome back!");
       navigate("/dashboard", { replace: true });
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Invalid Employee ID");
+      toast.error(error.response?.data?.detail || "Invalid Employee ID or PIN");
     } finally {
       setLoading(false);
     }
@@ -56,13 +66,9 @@ const Login = () => {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group Recruiting Services" 
-            className="h-20 mx-auto mb-4 object-contain"
-          />
-          <p className="text-horizon/80 text-sm italic font-serif">
-            "Building people, not just payroll."
+          <Brand />
+          <p className="text-horizon/80 text-sm mt-4">
+            Brownsville employee timekeeping and support
           </p>
         </div>
 
@@ -105,6 +111,19 @@ const Login = () => {
                       className="h-12 text-lg bg-horizon border-gray-200 focus:border-keystone focus:ring-keystone"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-foundation font-medium">Private PIN</label>
+                    <Input
+                      data-testid="employee-pin-input"
+                      type="password"
+                      inputMode="numeric"
+                      autoComplete="current-password"
+                      placeholder="Enter your PIN"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                      className="h-12 text-lg bg-horizon border-gray-200 focus:border-keystone focus:ring-keystone"
+                    />
+                  </div>
                   <Button
                     data-testid="numeric-login-btn"
                     type="submit"
@@ -119,7 +138,7 @@ const Login = () => {
               <TabsContent value="google">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground text-center">
-                    Sign in with your company Google account
+                    Managers and administrators may use their approved Google account
                   </p>
                   <Button
                     data-testid="google-login-btn"
@@ -146,7 +165,7 @@ const Login = () => {
             Equal Opportunity Employer • E-Verify Compliant
           </p>
           <p className="text-xs text-horizon/40">
-            © {new Date().getFullYear()} Garza Group Recruiting Services, LLC
+            © {new Date().getFullYear()} GH Service Group LLC
           </p>
         </div>
       </div>
