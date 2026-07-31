@@ -9,7 +9,15 @@ import {
   Bell, Home, ChevronRight, Briefcase, Building2, BarChart3
 } from "lucide-react";
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+const Brand = ({ compact = false }) => (
+  <div className="flex items-center gap-2" aria-label="GH Service Group">
+    <div className={`${compact ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm"} rounded-lg bg-keystone text-white flex items-center justify-center font-black`}>GH</div>
+    <div className="leading-tight">
+      <div className={`${compact ? "text-sm" : "text-base"} font-serif font-bold text-foundation`}>GH Service Group</div>
+      {!compact && <div className="text-[10px] uppercase tracking-widest text-foundation/50">Workforce Portal</div>}
+    </div>
+  </div>
+);
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -76,11 +84,7 @@ const Layout = ({ children }) => {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200 shadow-sm">
         {/* Logo */}
         <div className="p-4 border-b border-gray-100">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group" 
-            className="h-12 object-contain"
-          />
+          <Brand />
         </div>
 
         {/* User Info */}
@@ -115,7 +119,7 @@ const Layout = ({ children }) => {
         {/* Tagline */}
         <div className="px-4 py-3 border-t border-gray-100">
           <p className="text-xs text-muted-foreground italic font-serif text-center">
-            "Developing leaders, not just filling shifts."
+            "Service driven. People supported."
           </p>
         </div>
 
@@ -136,11 +140,7 @@ const Layout = ({ children }) => {
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between p-3">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group" 
-            className="h-8 object-contain"
-          />
+          <Brand compact />
           
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="relative" data-testid="notifications-btn">
