@@ -11,6 +11,8 @@ This branch converts the existing Garza Group workforce platform into a GH Servi
 - Admins can set or reset PINs from the Users panel
 - PIN hashes are excluded from user-list and user-update API responses
 - CORS no longer defaults to a wildcard origin
+- Employees can see and use only explicitly assigned sites
+- Production defaults to enforced geofencing and pre-provisioned accounts
 - Brownsville-specific employee instructions and ABM check-in reference added
 - Render deployment blueprint and environment templates added
 
