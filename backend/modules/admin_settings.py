@@ -18,7 +18,7 @@ db = client[os.environ.get('DB_NAME', 'test_database')]
 # ==================== MODELS ====================
 
 class BrandingSettings(BaseModel):
-    company_name: str = "Garza Group Recruiting Services"
+    company_name: str = "GH Service Group"
     tagline: str = "Building people, not just payroll."
     logo_url: str = ""
     favicon_url: str = ""
