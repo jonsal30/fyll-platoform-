@@ -21,24 +21,12 @@ import {
 } from "lucide-react";
 
 const Brand = ({ compact = false }) => (
-  <div className="flex items-center gap-2" aria-label="GH Service Group">
-    <div
-      className={`${compact ? "w-8 h-8 text-xs" : "w-10 h-10 text-sm"} rounded-lg bg-keystone text-white flex items-center justify-center font-black`}
-    >
-      GH
-    </div>
-    <div className="leading-tight">
-      <div
-        className={`${compact ? "text-sm" : "text-base"} font-serif font-bold text-foundation`}
-      >
-        GH Service Group
-      </div>
-      {!compact && (
-        <div className="text-[10px] uppercase tracking-widest text-foundation/50">
-          Workforce Portal
-        </div>
-      )}
-    </div>
+  <div className="flex items-center" aria-label="GH Service Group">
+    <img
+      src="/gh-service-group-logo.webp"
+      alt="GH Service Group — Veteran Owned. Service Driven."
+      className={`${compact ? "w-40" : "w-52"} h-auto object-contain`}
+    />
   </div>
 );
 
