@@ -280,7 +280,10 @@ async def create_session(request: Request, response: Response):
             }}
         )
     else:
-        # Create new user with Google account
+        # Production defaults to pre-provisioned users only.
+        allow_self_registration = os.environ.get("ALLOW_SELF_REGISTRATION", "false").lower() == "true"
+        if not allow_self_registration:
+            raise HTTPException(status_code=403, detail="Account is not provisioned. Contact GH Service Group.")
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         new_user = User(
             user_id=user_id,
@@ -384,8 +387,25 @@ async def clock_in(request: Request, data: ClockInRequest):
     if active_entry:
         raise HTTPException(status_code=400, detail="Already clocked in. Please clock out first.")
     
+    assigned_sites = user.get("assigned_sites", [])
+    if user.get("role") != "admin" and data.site_id not in assigned_sites:
+        raise HTTPException(status_code=403, detail="You are not assigned to this work site")
+
+    site = await db.work_sites.find_one(
+        {"site_id": data.site_id, "is_active": True},
+        {"_id": 0}
+    )
+    if not site:
+        raise HTTPException(status_code=404, detail="Active work site not found")
+
     # Verify location
     location_verified, distance = await verify_location(data.site_id, data.latitude, data.longitude)
+    geofence_enforced = os.environ.get("GEOFENCE_ENFORCED", "true").lower() == "true"
+    if geofence_enforced and not location_verified:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Outside the approved clock-in area ({round(distance)} meters from site)"
+        )
     
     # Create time entry
     entry = TimeEntry(
@@ -788,10 +808,9 @@ async def get_sites(request: Request):
     
     query = {"is_active": True}
     
-    # Non-admin users only see assigned sites
-    if user.get("role") not in ["admin"]:
-        if user.get("assigned_sites"):
-            query["site_id"] = {"$in": user.get("assigned_sites", [])}
+    # Non-admin users only see explicitly assigned sites.
+    if user.get("role") != "admin":
+        query["site_id"] = {"$in": user.get("assigned_sites", [])}
     
     sites = await db.work_sites.find(query, {"_id": 0}).to_list(100)
     return sites
