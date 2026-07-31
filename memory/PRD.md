@@ -1,10 +1,10 @@
-# Garza Group HR Platform - PRD
+# GH Service Group HR Platform - PRD
 
 ## Company Mission
 "Building people, not just payroll. Developing leaders, not just filling shifts. Strengthening communities, one person at a time."
 
 ## Platform Overview
-Complete HR Management Platform for GGRSLLC - a people-first staffing company serving janitorial, custodial, facilities & industrial roles across ABM, Walmart, XAI, LG, Boeing, and other clients.
+Complete HR Management Platform for GHSG LLC - a people-first staffing company serving janitorial, custodial, facilities & industrial roles across ABM, Walmart, XAI, LG, Boeing, and other clients.
 
 ## Modules Implemented
 
@@ -154,7 +154,7 @@ Complete HR Management Platform for GGRSLLC - a people-first staffing company se
 ## What's Been Implemented (Jan 2026)
 
 ### Rebrand Complete
-- Garza Group logo integration
+- GH Service Group logo integration
 - ATS Recruiting color palette (Keystone Indigo, Vertex Magenta, Foundation, Horizon)
 - Company taglines throughout ("Building people, not just payroll")
 - Professional serif + sans typography
@@ -171,7 +171,7 @@ Complete HR Management Platform for GGRSLLC - a people-first staffing company se
 8. 7411 Mesa (Houston, TX)
 9. RPM (Iowa Colony, TX)
 10. Skyline (Dallas, TX)
-11. GGRS HQ (8811 Park Place Blvd, Houston, TX)
+11. GHSG Support (8811 Park Place Blvd, Houston, TX)
 
 **Sample Employees:**
 - Khi Anderson (ID: 1001) - XAi Tulane
