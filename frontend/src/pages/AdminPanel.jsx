@@ -34,7 +34,7 @@ const AdminPanel = () => {
   
   const [editingUser, setEditingUser] = useState(null);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
-  const [userForm, setUserForm] = useState({ role: "", numeric_id: "", assigned_sites: [] });
+  const [userForm, setUserForm] = useState({ role: "", numeric_id: "", pin: "", assigned_sites: [] });
   const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
@@ -132,6 +132,7 @@ const AdminPanel = () => {
     setUserForm({
       role: userData.role || "employee",
       numeric_id: userData.numeric_id || "",
+      pin: "",
       assigned_sites: userData.assigned_sites || []
     });
     setUserDialogOpen(true);
@@ -143,6 +144,7 @@ const AdminPanel = () => {
       await axios.put(`${API}/users/${editingUser.user_id}`, {
         role: userForm.role,
         numeric_id: userForm.numeric_id || null,
+        pin: userForm.pin || null,
         assigned_sites: userForm.assigned_sites
       });
       toast.success("User updated");
@@ -419,6 +421,19 @@ const AdminPanel = () => {
                       onChange={(e) => setUserForm({ ...userForm, numeric_id: e.target.value })}
                       className="bg-background mt-1 font-mono"
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm text-muted-foreground">Set or reset private PIN</label>
+                    <Input
+                      data-testid="user-pin-input"
+                      type="password"
+                      inputMode="numeric"
+                      placeholder="4–12 digits; leave blank to keep current PIN"
+                      value={userForm.pin}
+                      onChange={(e) => setUserForm({ ...userForm, pin: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                      className="bg-background mt-1 font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Share the initial PIN privately and ask the employee not to reuse a banking PIN.</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Assigned Sites</label>
