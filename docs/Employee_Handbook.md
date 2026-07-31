@@ -1,107 +1,76 @@
-# GGRS Time Clock - Employee Handbook
+# GH Service Group Workforce Portal — Employee Guide
 
-## Welcome to the Garza Group Time Clock System!
+## Welcome
 
-"Building people, not just payroll."
+The GH Service Group Workforce Portal is the official mobile tool for recording work time, meal breaks, and weekly timesheets.
 
-This handbook will guide you through using the time clock app to track your work hours.
+## Sign in
 
----
+1. Open the portal in Safari or Chrome.
+2. Enter the Employee ID assigned by GH Service Group.
+3. Enter your private PIN.
+4. Tap **Sign In**.
 
-## Getting Started
+Keep your PIN private. GH Service Group will never ask for it by group text. If you forget it, contact an authorized manager so it can be reset.
 
-### How to Log In
+## Clock in
 
-You have **two options** to sign in:
+1. Arrive at your assigned work location.
+2. Select the correct site.
+3. Allow location access while using the portal.
+4. Take the required clock-in photo.
+5. Tap **Clock In**.
+6. Confirm that the app reports the clock-in as recorded.
 
-**Option 1: Employee ID (Recommended for quick access)**
-1. Open the app in your phone's browser
-2. Enter your **Employee ID** (a 4-digit number like 1001)
-3. Tap "Sign In"
+Do not clock in for another employee. Do not clock in before arriving at the assigned site.
 
-**Option 2: Google Sign-In**
-1. Open the app in your phone's browser
-2. Tap the "Google" tab
-3. Sign in with your personal Google account (Gmail)
-4. First time only: An admin will need to link your Google account to your employee profile
+## Meal break
 
-> **Don't know your Employee ID?** Ask your site manager or call GGRS HQ.
+Tap **Start Lunch Break** when the break begins and **End Lunch Break** immediately when work resumes. The portal deducts only the break recorded in the app.
 
----
+## Clock out
 
-## Clocking In
+1. Take the required clock-out photo.
+2. Tap **Clock Out**.
+3. Confirm that total hours appear.
 
-1. **Select your work site** from the dropdown
-2. **Allow GPS location** when prompted (required!)
-3. **Take your photo** by tapping the camera box
-4. Tap the big **"Clock In"** button
+If the portal does not confirm the action, take a screenshot and notify your site manager immediately.
 
-✅ **Green badge = Location Verified** - You're within 200m of the site
-⚠️ **Warning = Off-site** - You may be too far from the job site
+## Review and submit time
 
----
+1. Open **Timesheet**.
+2. Review each day, clock-in, lunch, clock-out, and total.
+3. Report missing or incorrect entries before payroll closes.
+4. Tap **Submit for Approval** at the end of the workweek.
 
-## Taking Lunch
+Submission does not replace the employee’s responsibility to report an error promptly.
 
-1. When starting lunch, tap **"Start Lunch Break"**
-2. When returning from lunch, tap **"End Lunch Break"**
+## Brownsville check-in reference
 
-> **Important:** Always log your lunches! This is required for compliance.
+ABM janitorial badging/check-in:
 
----
+**109 N Browne Ave, Brownsville, TX**
 
-## Clocking Out
+After entering the property, turn left. Look for the ABM trailer with the logo in front of the white shuttle buses.
 
-1. Take your **clock-out photo**
-2. Tap the big **"Clock Out"** button
-3. Your total hours will be calculated automatically
+This address is a check-in reference and must not be configured as the time-clock geofence unless GH Service Group confirms that employees actually begin and end paid work there.
 
----
+## Troubleshooting
 
-## Viewing Your Timesheet
+- **Location unavailable:** Enable Location Services and allow the browser to use your location.
+- **Camera unavailable:** Allow camera access in browser settings.
+- **Wrong site shown:** Do not clock in; contact your manager.
+- **Forgot to clock out:** Notify your manager immediately.
+- **Portal unavailable:** Record the time, take a screenshot if possible, and contact your manager.
 
-1. Tap **"Timesheet"** in the bottom menu
-2. Use the arrows to navigate between weeks
-3. Review your hours before submitting
+## Support
 
----
+Website: **ghsgrp.com**
 
-## Submitting Your Timesheet
+Email:
 
-At the end of each week:
+- HR: **hr@ghsgrp.com**
+- Payroll: **payroll@ghsgrp.com**
+- Careers: **careers@ghsgrp.com**
 
-1. Go to **Timesheet**
-2. Make sure all entries are correct
-3. Tap **"Submit for Approval"**
-4. Your manager will review and approve
-
----
-
-## Common Questions
-
-**Q: What if I forget to clock out?**
-A: Contact your manager immediately. They can adjust your timesheet.
-
-**Q: What if GPS isn't working?**
-A: 
-- Make sure Location Services are ON in your phone settings
-- Try stepping outside for better signal
-- Contact your manager if issues persist
-
-**Q: What if I'm working at a different site?**
-A: Select the correct site from the dropdown before clocking in.
-
-**Q: Can I see my pay hours?**
-A: Yes! Go to Timesheet to see your weekly totals.
-
----
-
-## Need Help?
-
-Contact your **Site Manager** or call **GGRS HQ**
-
----
-
-*"Strengthening communities, one person at a time."*
-
-© 2026 Garza Group Recruiting Services, LLC
+© 2026 GH Service Group LLC
