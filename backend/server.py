@@ -543,7 +543,12 @@ async def clock_in(request: Request, data: ClockInRequest):
     # Verify location
     location_verified, distance = await verify_location(data.site_id, data.latitude, data.longitude)
     geofence_enforced = os.environ.get("GEOFENCE_ENFORCED", "true").lower() == "true"
-    if geofence_enforced and not location_verified:
+    completed_attendance_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    geofence_observation_period = completed_attendance_days < 5
+    if geofence_enforced and not geofence_observation_period and not location_verified:
         raise HTTPException(
             status_code=403,
             detail=f"Outside the approved clock-in area ({round(distance)} meters from site)"
