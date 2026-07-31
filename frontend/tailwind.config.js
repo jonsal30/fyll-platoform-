@@ -12,7 +12,7 @@ module.exports = {
                 serif: ['Crimson Pro', 'Georgia', 'Times New Roman', 'serif'],
             },
             colors: {
-                // Garza Group Brand Colors
+                // GH Service Group Brand Colors
                 keystone: '#4600FF',
                 foundation: '#101820',
                 vertex: '#FF2E63',
