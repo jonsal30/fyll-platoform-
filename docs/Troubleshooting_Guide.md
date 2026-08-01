@@ -1,4 +1,4 @@
-# GGRS Time Clock - Troubleshooting Guide
+# GHSG Time Clock - Troubleshooting Guide
 
 ## Common Issues and Solutions
 
@@ -237,9 +237,9 @@
 
 **Site Issues:** Contact your Site Manager
 
-**Technical Issues:** Contact GGRS Admin
+**Technical Issues:** Contact GHSG Admin
 
-**Urgent Payroll Issues:** Contact GGRS HQ immediately
+**Urgent Payroll Issues:** Contact GHSG Support immediately
 
 ---
 
@@ -256,4 +256,4 @@ If you encounter a bug:
 
 *"We may be small. But we build like we're here forever."*
 
-© 2026 Garza Group Recruiting Services, LLC
+© 2026 GH Service Group LLC

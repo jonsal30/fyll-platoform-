@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
+import secrets
 from datetime import datetime, timezone, timedelta
 import httpx
 import math
@@ -16,6 +17,7 @@ import io
 import csv
 import base64
 import warnings
+from passlib.context import CryptContext
 
 # Google Sheets imports
 from google_auth_oauthlib.flow import Flow
@@ -43,7 +45,7 @@ GOOGLE_SCOPES = [
 ]
 
 # Create the main app
-app = FastAPI(title="GGRS HR Platform API")
+app = FastAPI(title="GH Service Group Workforce Platform API")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -57,6 +59,7 @@ from modules.admin_settings import router as admin_settings_router
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # ==================== MODELS ====================
 
@@ -71,6 +74,7 @@ class User(BaseModel):
     picture: Optional[str] = None
     role: str = "employee"
     numeric_id: Optional[str] = None
+    pin_hash: Optional[str] = None
     assigned_sites: List[str] = []
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -100,6 +104,20 @@ class TimeEntry(BaseModel):
     total_hours: Optional[float] = None
     status: str = "active"  # active, completed, pending_approval, approved, rejected
     notes: Optional[str] = None
+
+class AttendanceSession(BaseModel):
+    attendance_id: str = Field(default_factory=lambda: f"att_{uuid.uuid4().hex[:12]}")
+    user_id: str
+    site_id: Optional[str] = None
+    training_day: int
+    status: str = "awaiting_work_start"
+    shuttle_check_in: datetime
+    work_start: Optional[datetime] = None
+    work_end: Optional[datetime] = None
+    browne_check_out: Optional[datetime] = None
+    window_expires_at: datetime
+    events: List[Dict[str, Any]] = []
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Timesheet(BaseModel):
     timesheet_id: str = Field(default_factory=lambda: f"ts_{uuid.uuid4().hex[:10]}")
@@ -144,6 +162,13 @@ class LunchRequest(BaseModel):
     entry_id: str
     action: str  # start or end
 
+class AttendanceEventRequest(BaseModel):
+    event_type: str
+    latitude: float
+    longitude: float
+    accuracy: Optional[float] = None
+    site_id: Optional[str] = None
+
 class ApprovalRequest(BaseModel):
     timesheet_id: str
     action: str  # approve or reject
@@ -157,13 +182,23 @@ class CreateSiteRequest(BaseModel):
     longitude: float
     radius_meters: int = 200
 
+class CreateUserRequest(BaseModel):
+    name: str
+    email: Optional[EmailStr] = None
+    role: str = "employee"
+    numeric_id: str
+    pin: str
+    assigned_sites: List[str] = []
+
 class UpdateUserRequest(BaseModel):
     role: Optional[str] = None
     assigned_sites: Optional[List[str]] = None
     numeric_id: Optional[str] = None
+    pin: Optional[str] = None
 
 class NumericLoginRequest(BaseModel):
     numeric_id: str
+    pin: str
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -275,7 +310,10 @@ async def create_session(request: Request, response: Response):
             }}
         )
     else:
-        # Create new user with Google account
+        # Production defaults to pre-provisioned users only.
+        allow_self_registration = os.environ.get("ALLOW_SELF_REGISTRATION", "false").lower() == "true"
+        if not allow_self_registration:
+            raise HTTPException(status_code=403, detail="Account is not provisioned. Contact GH Service Group.")
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         new_user = User(
             user_id=user_id,
@@ -308,16 +346,17 @@ async def create_session(request: Request, response: Response):
         max_age=7*24*60*60
     )
     
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "pin_hash": 0})
     return user
 
 @api_router.post("/auth/numeric-login")
 async def numeric_login(request: NumericLoginRequest, response: Response):
-    """Login with numeric ID"""
+    """Login with employee ID and private PIN."""
     user = await db.users.find_one({"numeric_id": request.numeric_id}, {"_id": 0})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="Employee ID not found")
+    pin_hash = user.get("pin_hash") if user else None
+
+    if not user or not pin_hash or not pwd_context.verify(request.pin, pin_hash):
+        raise HTTPException(status_code=401, detail="Invalid Employee ID or PIN")
     
     # Create session
     session_token = f"st_{uuid.uuid4().hex}"
@@ -340,7 +379,10 @@ async def numeric_login(request: NumericLoginRequest, response: Response):
         max_age=7*24*60*60
     )
     
-    return user
+    return await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "pin_hash": 0}
+    )
 
 @api_router.get("/auth/me")
 async def get_me(request: Request):
@@ -348,7 +390,10 @@ async def get_me(request: Request):
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return user
+    return await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "pin_hash": 0}
+    )
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
@@ -359,6 +404,132 @@ async def logout(request: Request, response: Response):
     
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out"}
+
+# ==================== BROWNSVILLE ATTENDANCE WORKFLOW ====================
+
+BROWNE_EVENT_TYPES = {
+    "shuttle_check_in",
+    "work_start",
+    "lunch_out",
+    "lunch_in",
+    "work_end",
+    "browne_check_out",
+}
+
+ATTENDANCE_SEQUENCE = {
+    "awaiting_work_start": "work_start",
+    "working": "lunch_out",
+    "on_lunch": "lunch_in",
+    "returned_to_work": "work_end",
+    "awaiting_browne_return": "browne_check_out",
+}
+
+@api_router.get("/attendance/status")
+async def attendance_status(request: Request):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    session = await db.attendance_sessions.find_one(
+        {"user_id": user["user_id"], "status": {"$ne": "completed"}},
+        {"_id": 0}
+    )
+    completed_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    return {
+        "session": session,
+        "completed_days": completed_days,
+        "location_capture_required": completed_days < 5,
+        "next_event": "shuttle_check_in" if not session else ATTENDANCE_SEQUENCE.get(session["status"]),
+    }
+
+@api_router.post("/attendance/event")
+async def record_attendance_event(request: Request, data: AttendanceEventRequest):
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if data.event_type not in BROWNE_EVENT_TYPES:
+        raise HTTPException(status_code=400, detail="Unsupported attendance event")
+
+    now = datetime.now(timezone.utc)
+    active = await db.attendance_sessions.find_one(
+        {"user_id": user["user_id"], "status": {"$ne": "completed"}},
+        {"_id": 0}
+    )
+    completed_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    training_day = min(completed_days + 1, 5)
+    capture_for_geofence = completed_days < 5
+    event = {
+        "event_type": data.event_type,
+        "recorded_at": now.isoformat(),
+        "latitude": data.latitude,
+        "longitude": data.longitude,
+        "accuracy": data.accuracy,
+        "capture_for_geofence": capture_for_geofence,
+    }
+
+    browne_lat = os.environ.get("BROWNE_LATITUDE")
+    browne_lon = os.environ.get("BROWNE_LONGITUDE")
+    browne_radius = int(os.environ.get("BROWNE_RADIUS_METERS", "400"))
+    if data.event_type in {"shuttle_check_in", "browne_check_out"} and browne_lat and browne_lon:
+        distance = calculate_distance(float(browne_lat), float(browne_lon), data.latitude, data.longitude)
+        event["distance_from_browne_meters"] = round(distance, 1)
+        event["within_browne_geofence"] = distance <= browne_radius
+        if not capture_for_geofence and distance > browne_radius:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Outside the Browne attendance area ({round(distance)} meters away)"
+            )
+
+    if data.event_type == "shuttle_check_in":
+        if active:
+            raise HTTPException(status_code=400, detail="An attendance day is already open")
+        session = AttendanceSession(
+            user_id=user["user_id"],
+            site_id=data.site_id,
+            training_day=training_day,
+            shuttle_check_in=now,
+            window_expires_at=now + timedelta(hours=10),
+            events=[event],
+        )
+        await db.attendance_sessions.insert_one(session.model_dump())
+        return session.model_dump()
+
+    if not active:
+        raise HTTPException(status_code=400, detail="Check in for the Browne shuttle first")
+    expires_at = active["window_expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if now > expires_at and data.event_type != "browne_check_out":
+        raise HTTPException(status_code=400, detail="The 10-hour punch window has expired; contact a manager")
+
+    expected = ATTENDANCE_SEQUENCE.get(active["status"])
+    if data.event_type == "work_end" and active["status"] == "working":
+        expected = "work_end"
+    if data.event_type != expected:
+        raise HTTPException(status_code=400, detail=f"Next required action is {expected or 'manager review'}")
+
+    updates = {"$push": {"events": event}}
+    if data.event_type == "work_start":
+        updates["$set"] = {"status": "working", "work_start": now.isoformat()}
+    elif data.event_type == "lunch_out":
+        updates["$set"] = {"status": "on_lunch"}
+    elif data.event_type == "lunch_in":
+        updates["$set"] = {"status": "returned_to_work"}
+    elif data.event_type == "work_end":
+        updates["$set"] = {"status": "awaiting_browne_return", "work_end": now.isoformat()}
+    elif data.event_type == "browne_check_out":
+        updates["$set"] = {"status": "completed", "browne_check_out": now.isoformat()}
+
+    await db.attendance_sessions.update_one({"attendance_id": active["attendance_id"]}, updates)
+    return await db.attendance_sessions.find_one({"attendance_id": active["attendance_id"]}, {"_id": 0})
 
 # ==================== TIME CLOCK ENDPOINTS ====================
 
@@ -378,8 +549,30 @@ async def clock_in(request: Request, data: ClockInRequest):
     if active_entry:
         raise HTTPException(status_code=400, detail="Already clocked in. Please clock out first.")
     
+    assigned_sites = user.get("assigned_sites", [])
+    if user.get("role") != "admin" and data.site_id not in assigned_sites:
+        raise HTTPException(status_code=403, detail="You are not assigned to this work site")
+
+    site = await db.work_sites.find_one(
+        {"site_id": data.site_id, "is_active": True},
+        {"_id": 0}
+    )
+    if not site:
+        raise HTTPException(status_code=404, detail="Active work site not found")
+
     # Verify location
     location_verified, distance = await verify_location(data.site_id, data.latitude, data.longitude)
+    geofence_enforced = os.environ.get("GEOFENCE_ENFORCED", "true").lower() == "true"
+    completed_attendance_days = await db.attendance_sessions.count_documents({
+        "user_id": user["user_id"],
+        "status": "completed"
+    })
+    geofence_observation_period = completed_attendance_days < 5
+    if geofence_enforced and not geofence_observation_period and not location_verified:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Outside the approved clock-in area ({round(distance)} meters from site)"
+        )
     
     # Create time entry
     entry = TimeEntry(
@@ -782,10 +975,9 @@ async def get_sites(request: Request):
     
     query = {"is_active": True}
     
-    # Non-admin users only see assigned sites
-    if user.get("role") not in ["admin"]:
-        if user.get("assigned_sites"):
-            query["site_id"] = {"$in": user.get("assigned_sites", [])}
+    # Non-admin users only see explicitly assigned sites.
+    if user.get("role") != "admin":
+        query["site_id"] = {"$in": user.get("assigned_sites", [])}
     
     sites = await db.work_sites.find(query, {"_id": 0}).to_list(100)
     return sites
@@ -843,6 +1035,37 @@ async def delete_site(site_id: str, request: Request):
 
 # ==================== USER MANAGEMENT ENDPOINTS ====================
 
+@api_router.post("/users")
+async def create_user(request: Request, data: CreateUserRequest):
+    """Create a pre-provisioned employee, manager, or administrator."""
+    admin = await get_current_user(request)
+    if not admin:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if admin.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if data.role not in {"employee", "manager", "admin"}:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    if not data.numeric_id.strip():
+        raise HTTPException(status_code=400, detail="Employee ID is required")
+    if not (4 <= len(data.pin) <= 12) or not data.pin.isdigit():
+        raise HTTPException(status_code=400, detail="PIN must contain 4 to 12 digits")
+    if await db.users.find_one({"numeric_id": data.numeric_id.strip()}):
+        raise HTTPException(status_code=409, detail="Employee ID is already in use")
+
+    new_user = User(
+        name=data.name.strip(),
+        email=str(data.email) if data.email else None,
+        role=data.role,
+        numeric_id=data.numeric_id.strip(),
+        pin_hash=pwd_context.hash(data.pin),
+        assigned_sites=data.assigned_sites,
+    )
+    await db.users.insert_one(new_user.model_dump())
+    return await db.users.find_one(
+        {"user_id": new_user.user_id},
+        {"_id": 0, "pin_hash": 0}
+    )
+
 @api_router.get("/users")
 async def get_users(request: Request):
     """Get all users (admin/manager)"""
@@ -853,7 +1076,7 @@ async def get_users(request: Request):
     if user.get("role") not in ["manager", "admin"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    users = await db.users.find({}, {"_id": 0}).to_list(1000)
+    users = await db.users.find({}, {"_id": 0, "pin_hash": 0}).to_list(1000)
     return users
 
 @api_router.put("/users/{user_id}")
@@ -867,9 +1090,25 @@ async def update_user(user_id: str, request: Request, data: UpdateUserRequest):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if "numeric_id" in update_data:
+        numeric_id = update_data["numeric_id"].strip()
+        if not numeric_id:
+            raise HTTPException(status_code=400, detail="Employee ID is required")
+        duplicate = await db.users.find_one({
+            "numeric_id": numeric_id,
+            "user_id": {"$ne": user_id}
+        })
+        if duplicate:
+            raise HTTPException(status_code=409, detail="Employee ID is already in use")
+        update_data["numeric_id"] = numeric_id
+    pin = update_data.pop("pin", None)
+    if pin is not None:
+        if not (4 <= len(pin) <= 12) or not pin.isdigit():
+            raise HTTPException(status_code=400, detail="PIN must contain 4 to 12 digits")
+        update_data["pin_hash"] = pwd_context.hash(pin)
     
     await db.users.update_one({"user_id": user_id}, {"$set": update_data})
-    return await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    return await db.users.find_one({"user_id": user_id}, {"_id": 0, "pin_hash": 0})
 
 # ==================== NOTIFICATION ENDPOINTS ====================
 
@@ -1490,7 +1729,7 @@ async def export_audit_csv(request: Request, start_date: str, end_date: str, sit
 
 @api_router.get("/")
 async def root():
-    return {"message": "Garza Group Time Clock API", "version": "1.0.0"}
+    return {"message": "GH Service Group Workforce Platform API", "version": "1.1.0"}
 
 # Include the router
 app.include_router(api_router)
@@ -1505,10 +1744,39 @@ app.include_router(admin_settings_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def create_bootstrap_admin():
+    """Create the first administrator once from private deployment settings."""
+    if await db.users.count_documents({"role": "admin"}) > 0:
+        return
+
+    admin_id = os.environ.get("BOOTSTRAP_ADMIN_ID", "").strip()
+    admin_pin = os.environ.get("BOOTSTRAP_ADMIN_PIN", "").strip()
+    admin_name = os.environ.get("BOOTSTRAP_ADMIN_NAME", "GHSG Administrator").strip()
+
+    if not admin_id and not admin_pin:
+        logger.warning("No administrator exists; configure BOOTSTRAP_ADMIN_ID and BOOTSTRAP_ADMIN_PIN")
+        return
+    if not admin_id or not (6 <= len(admin_pin) <= 12) or not admin_pin.isdigit():
+        logger.error("Bootstrap administrator settings are incomplete or invalid")
+        return
+    if await db.users.find_one({"numeric_id": admin_id}):
+        logger.error("Bootstrap employee ID already belongs to a non-admin user")
+        return
+
+    bootstrap = User(
+        name=admin_name,
+        role="admin",
+        numeric_id=admin_id,
+        pin_hash=pwd_context.hash(admin_pin),
+    )
+    await db.users.insert_one(bootstrap.model_dump())
+    logger.warning("Bootstrap administrator created; remove BOOTSTRAP_ADMIN_PIN from deployment settings")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -2,7 +2,7 @@ import requests
 import sys
 from datetime import datetime, timezone, timedelta
 
-class GGRSTimeClockAPITester:
+class GHSGTimeClockAPITester:
     def __init__(self, base_url="https://workforce-tracker-52.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = "test_session_admin_001"  # Pre-created admin test token
@@ -207,11 +207,11 @@ class GGRSTimeClockAPITester:
         return success
 
 def main():
-    print("🚀 Starting GGRS Time Clock API Tests...")
+    print("🚀 Starting GHSG Time Clock API Tests...")
     print("Testing 34+ employees, payroll reports, audit trail, and Adriana Hernandez login")
     print("=" * 70)
     
-    tester = GGRSTimeClockAPITester()
+    tester = GHSGTimeClockAPITester()
 
     # Test API root (no auth needed)
     print("\n📋 Testing Basic API Access...")

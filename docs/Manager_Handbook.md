@@ -1,4 +1,4 @@
-# GGRS Time Clock - Manager Handbook
+# GHSG Time Clock - Manager Handbook
 
 ## Manager Dashboard Guide
 
@@ -134,10 +134,10 @@ For compliance records:
 
 ## Need Help?
 
-Contact **GGRS HQ** or your regional manager
+Contact **GHSG Support** or your regional manager
 
 ---
 
 *"Building people, not just payroll."*
 
-© 2026 Garza Group Recruiting Services, LLC
+© 2026 GH Service Group LLC

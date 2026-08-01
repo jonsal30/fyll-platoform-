@@ -1,12 +1,11 @@
 import { useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
 import { useAuth, API } from "../App";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { login } = useAuth();
   const hasProcessed = useRef(false);
 
@@ -48,7 +47,7 @@ const AuthCallback = () => {
     };
 
     processAuth();
-  }, []);
+  }, [login, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">

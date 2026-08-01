@@ -4,12 +4,31 @@ import axios from "axios";
 import { useAuth, API } from "../App";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { 
-  Clock, FileText, Users, Settings, LogOut, Menu, X, 
-  Bell, Home, ChevronRight, Briefcase, Building2, BarChart3
+import {
+  Clock,
+  FileText,
+  Users,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  Bell,
+  Home,
+  ChevronRight,
+  Briefcase,
+  Building2,
+  BarChart3,
 } from "lucide-react";
 
-const LOGO_URL = "https://customer-assets.emergentagent.com/job_workforce-tracker-52/artifacts/i46gcfuu_GGRS%20HORIZONTAL.png";
+const Brand = ({ compact = false }) => (
+  <div className="flex items-center" aria-label="GH Service Group">
+    <img
+      src="/gh-service-group-logo.webp"
+      alt="GH Service Group — Veteran Owned. Service Driven."
+      className={`${compact ? "w-40" : "w-52"} h-auto object-contain`}
+    />
+  </div>
+);
 
 const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -27,7 +46,7 @@ const Layout = ({ children }) => {
         // Ignore errors
       }
     };
-    
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
@@ -41,15 +60,15 @@ const Layout = ({ children }) => {
   const navItems = [
     { to: "/dashboard", icon: Home, label: "Clock" },
     { to: "/timesheet", icon: FileText, label: "Timesheet" },
-    ...(user?.role === "manager" || user?.role === "admin" 
+    ...(user?.role === "manager" || user?.role === "admin"
       ? [
           { to: "/manager", icon: Users, label: "Approvals" },
-          { to: "/recruiting", icon: Briefcase, label: "Recruiting" }
-        ] 
+          { to: "/recruiting", icon: Briefcase, label: "Recruiting" },
+        ]
       : []),
-    ...(user?.role === "admin" 
-      ? [{ to: "/admin", icon: Settings, label: "Admin" }] 
-      : [])
+    ...(user?.role === "admin"
+      ? [{ to: "/admin", icon: Settings, label: "Admin" }]
+      : []),
   ];
 
   const NavItem = ({ item, mobile = false }) => (
@@ -58,9 +77,10 @@ const Layout = ({ children }) => {
       onClick={() => mobile && setMobileMenuOpen(false)}
       className={({ isActive }) => `
         flex items-center gap-3 px-4 py-3 rounded transition-all
-        ${isActive 
-          ? "bg-keystone text-white" 
-          : "text-foundation/70 hover:bg-horizon hover:text-foundation"
+        ${
+          isActive
+            ? "bg-keystone text-white"
+            : "text-foundation/70 hover:bg-horizon hover:text-foundation"
         }
         ${mobile ? "text-lg" : "text-sm"}
       `}
@@ -76,11 +96,7 @@ const Layout = ({ children }) => {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-200 shadow-sm">
         {/* Logo */}
         <div className="p-4 border-b border-gray-100">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group" 
-            className="h-12 object-contain"
-          />
+          <Brand />
         </div>
 
         {/* User Info */}
@@ -88,15 +104,21 @@ const Layout = ({ children }) => {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-keystone/10 flex items-center justify-center overflow-hidden">
               {user?.picture ? (
-                <img src={user.picture} alt="" className="w-full h-full object-cover" />
+                <img
+                  src={user.picture}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <Users className="w-5 h-5 text-keystone" />
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-foundation truncate">{user?.name}</p>
-              <Badge 
-                variant="outline" 
+              <p className="font-medium text-sm text-foundation truncate">
+                {user?.name}
+              </p>
+              <Badge
+                variant="outline"
                 className="text-xs mt-0.5 border-keystone/30 text-keystone"
               >
                 {user?.role}
@@ -115,7 +137,7 @@ const Layout = ({ children }) => {
         {/* Tagline */}
         <div className="px-4 py-3 border-t border-gray-100">
           <p className="text-xs text-muted-foreground italic font-serif text-center">
-            "Developing leaders, not just filling shifts."
+            "Service driven. People supported."
           </p>
         </div>
 
@@ -136,14 +158,15 @@ const Layout = ({ children }) => {
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between p-3">
-          <img 
-            src={LOGO_URL} 
-            alt="Garza Group" 
-            className="h-8 object-contain"
-          />
-          
+          <Brand compact />
+
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" data-testid="notifications-btn">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              data-testid="notifications-btn"
+            >
               <Bell className="w-5 h-5 text-foundation" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-vertex text-white text-xs rounded-full flex items-center justify-center">
@@ -151,13 +174,17 @@ const Layout = ({ children }) => {
                 </span>
               )}
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="mobile-menu-btn"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6 text-foundation" /> : <Menu className="w-6 h-6 text-foundation" />}
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6 text-foundation" />
+              ) : (
+                <Menu className="w-6 h-6 text-foundation" />
+              )}
             </Button>
           </div>
         </div>
@@ -169,26 +196,33 @@ const Layout = ({ children }) => {
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-keystone/10 flex items-center justify-center overflow-hidden">
                   {user?.picture ? (
-                    <img src={user.picture} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={user.picture}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <Users className="w-5 h-5 text-keystone" />
                   )}
                 </div>
                 <div>
                   <p className="font-medium text-foundation">{user?.name}</p>
-                  <Badge variant="outline" className="text-xs border-keystone/30 text-keystone">
+                  <Badge
+                    variant="outline"
+                    className="text-xs border-keystone/30 text-keystone"
+                  >
                     {user?.role}
                   </Badge>
                 </div>
               </div>
             </div>
-            
+
             <nav className="p-4 space-y-1">
               {navItems.map((item) => (
                 <NavItem key={item.to} item={item} mobile />
               ))}
             </nav>
-            
+
             <div className="p-4 border-t border-gray-100">
               <Button
                 variant="ghost"
@@ -204,9 +238,7 @@ const Layout = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main className="flex-1 overflow-auto">{children}</main>
 
       {/* Mobile Bottom Nav */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-bottom z-40">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import { toast } from "sonner";
 import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from "date-fns";
@@ -24,7 +24,10 @@ const Timesheet = () => {
   const [submitting, setSubmitting] = useState(false);
   const [timesheets, setTimesheets] = useState([]);
 
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekEnd = useMemo(
+    () => endOfWeek(weekStart, { weekStartsOn: 1 }),
+    [weekStart],
+  );
 
   useEffect(() => {
     const fetchSites = async () => {
@@ -39,7 +42,7 @@ const Timesheet = () => {
       }
     };
     fetchSites();
-  }, []);
+  }, [selectedSite]);
 
   useEffect(() => {
     if (!selectedSite) return;
@@ -69,7 +72,7 @@ const Timesheet = () => {
     };
 
     fetchEntries();
-  }, [selectedSite, weekStart]);
+  }, [selectedSite, weekStart, weekEnd]);
 
   const navigateWeek = (direction) => {
     setWeekStart(prev => direction === "prev" ? subWeeks(prev, 1) : addWeeks(prev, 1));
