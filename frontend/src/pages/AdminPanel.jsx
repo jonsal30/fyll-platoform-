@@ -80,7 +80,9 @@ const AdminPanel = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [userForm, setUserForm] = useState({
-    role: "",
+    name: "",
+    email: "",
+    role: "employee",
     numeric_id: "",
     pin: "",
     assigned_sites: [],
@@ -189,31 +191,50 @@ const AdminPanel = () => {
   };
 
   // User Management
-  const openUserDialog = (userData) => {
+  const openUserDialog = (userData = null) => {
     setEditingUser(userData);
     setUserForm({
-      role: userData.role || "employee",
-      numeric_id: userData.numeric_id || "",
+      name: userData?.name || "",
+      email: userData?.email || "",
+      role: userData?.role || "employee",
+      numeric_id: userData?.numeric_id || "",
       pin: "",
-      assigned_sites: userData.assigned_sites || [],
+      assigned_sites: userData?.assigned_sites || [],
     });
     setUserDialogOpen(true);
   };
 
   const handleSaveUser = async () => {
+    if (!editingUser && (!userForm.name.trim() || !userForm.numeric_id.trim() || !userForm.pin)) {
+      toast.error("Name, Employee ID, and initial PIN are required");
+      return;
+    }
+
     setSavingUser(true);
     try {
-      await axios.put(`${API}/users/${editingUser.user_id}`, {
-        role: userForm.role,
-        numeric_id: userForm.numeric_id || null,
-        pin: userForm.pin || null,
-        assigned_sites: userForm.assigned_sites,
-      });
-      toast.success("User updated");
+      if (editingUser) {
+        await axios.put(`${API}/users/${editingUser.user_id}`, {
+          role: userForm.role,
+          numeric_id: userForm.numeric_id || null,
+          pin: userForm.pin || null,
+          assigned_sites: userForm.assigned_sites,
+        });
+        toast.success("User updated");
+      } else {
+        await axios.post(`${API}/users`, {
+          name: userForm.name.trim(),
+          email: userForm.email.trim() || null,
+          role: userForm.role,
+          numeric_id: userForm.numeric_id.trim(),
+          pin: userForm.pin,
+          assigned_sites: userForm.assigned_sites,
+        });
+        toast.success("Employee account created");
+      }
       setUserDialogOpen(false);
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Failed to update user");
+      toast.error(error.response?.data?.detail || "Failed to save user");
     } finally {
       setSavingUser(false);
     }
@@ -467,10 +488,14 @@ const AdminPanel = () => {
           {/* Users Tab */}
           <TabsContent value="users" className="mt-6">
             <Card className="bg-card border-border">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="font-heading text-xl">
                   User Management
                 </CardTitle>
+                <Button onClick={() => openUserDialog()} data-testid="add-user-btn">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Employee
+                </Button>
               </CardHeader>
               <CardContent>
                 <Table className="data-table">
@@ -537,10 +562,33 @@ const AdminPanel = () => {
               <DialogContent className="bg-card border-border">
                 <DialogHeader>
                   <DialogTitle className="font-heading">
-                    Edit User: {editingUser?.name}
+                    {editingUser ? `Edit User: ${editingUser.name}` : "Add Employee"}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
+                  {!editingUser && (
+                    <>
+                      <div>
+                        <label className="text-sm text-muted-foreground">Full Name</label>
+                        <Input
+                          data-testid="user-name-input"
+                          value={userForm.name}
+                          onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                          className="bg-background mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm text-muted-foreground">Email (optional)</label>
+                        <Input
+                          data-testid="user-email-input"
+                          type="email"
+                          value={userForm.email}
+                          onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                          className="bg-background mt-1"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="text-sm text-muted-foreground">
                       Role
@@ -586,7 +634,7 @@ const AdminPanel = () => {
                       data-testid="user-pin-input"
                       type="password"
                       inputMode="numeric"
-                      placeholder="4–12 digits; leave blank to keep current PIN"
+                      placeholder={editingUser ? "4–12 digits; leave blank to keep current PIN" : "4–12 digit initial PIN"}
                       value={userForm.pin}
                       onChange={(e) =>
                         setUserForm({
@@ -658,7 +706,7 @@ const AdminPanel = () => {
                     {savingUser && (
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     )}
-                    Save
+                    {editingUser ? "Save" : "Create Employee"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
