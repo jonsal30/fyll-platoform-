@@ -1,62 +1,90 @@
 # GH Service Group Brownsville Deployment Readiness
 
-This branch converts the existing Garza Group workforce platform into a GH Service Group employee portal while preserving the functioning time-clock, geofence, photo, lunch, timesheet, approval, ATS, and administration modules.
+This branch converts the inherited workforce platform into a GH Service Group employee portal for Brownsville. It preserves timekeeping, lunch tracking, timesheets, approvals, reporting, ATS, MongoDB, and Google Sheets hooks while adding the Browne shuttle workflow.
 
-## Changes in this branch
+## Employee workflow
 
-- GH Service Group branding on employee login, navigation, API metadata, and employee documentation
-- Removed the external GGRS logo dependency from employee-facing screens
-- Employee login now requires both Employee ID and a private PIN
-- PINs are stored only as bcrypt hashes
-- Admins can set or reset PINs from the Users panel
-- PIN hashes are excluded from user-list and user-update API responses
-- CORS no longer defaults to a wildcard origin
-- Employees can see and use only explicitly assigned sites
-- Production defaults to enforced geofencing and pre-provisioned accounts
-- Brownsville-specific employee instructions and ABM check-in reference added
-- Render deployment blueprint and environment templates added
+1. **Check In for Shuttle at Browne** — attendance only; no paid time is created.
+2. **Start Work** — creates the paid time entry and captures a verification photo and GPS.
+3. **Start Lunch** — pauses paid work time.
+4. **Return from Lunch** — resumes paid work time.
+5. **End Work** — completes the paid time entry and captures a verification photo and GPS.
+6. **Check Out at Browne** — attendance-only return confirmation.
 
-## Production prerequisites
+The API rejects out-of-order events. Employees may end work without a lunch when no lunch was taken. The work/lunch/end actions remain linked to the payroll time-entry record.
 
-1. Create a production MongoDB database and set `MONGO_URL` and `DB_NAME`.
-2. Deploy the backend and set `CORS_ORIGINS` to the exact employee portal URL.
-3. Deploy the frontend and set `REACT_APP_BACKEND_URL` to the backend origin without `/api`.
-4. Configure the precise paid-work geofence before employees clock time.
-5. Create or import current GHSG employees; assign unique IDs, private PINs, roles, and sites.
-6. Test one employee, one manager, and one administrator account end to end.
-7. Validate camera and location permissions on iPhone Safari and Android Chrome.
-8. Confirm the payroll export format against the current GHSG submission sheet.
-9. Publish the employee guide and support escalation path.
-10. Back up the database and define retention rules for employee photos and GPS records.
+## Browne attendance location
 
-## Critical Brownsville location decision
+- Address: 109 N Browne Ave, Brownsville, TX 78521
+- Latitude: `25.917616`
+- Longitude: `-97.389920`
+- Initial radius: `400` meters
 
-The known address `109 N Browne Ave, Brownsville, TX` is the ABM badging/check-in location. It should not automatically become the time-clock geofence. The administrator must enter the actual location where paid time begins and ends, with verified latitude, longitude, and radius.
+The first five completed attendance days collect GPS evidence without blocking an employee. Starting after day five, Browne shuttle check-in and return check-out must fall within the configured radius.
 
-## Existing user migration
+Paid-work geofence enforcement is initially disabled with `GEOFENCE_ENFORCED=false`. Review the first-five-day work-start/work-end evidence, configure the verified SpaceX/Shawmut worksite center and radius in **Admin → Sites**, then set `GEOFENCE_ENFORCED=true`.
 
-Existing users on the inherited database do not have PIN hashes. An administrator must open each current GHSG user in **Admin → Users**, assign the Brownsville site, set a private 4–12 digit PIN, and save before that user can sign in.
+## Identity and employee provisioning
 
-Do not reuse the same PIN for the full workforce. Do not use SSN digits, birth dates, or payroll account numbers.
+- Employee sign-in requires Employee ID plus a private 4–12 digit PIN.
+- PINs are stored only as bcrypt hashes and are excluded from all login, profile, and user-list responses.
+- Legacy Emergent Google sign-in is disabled by default.
+- Self-registration is disabled.
+- Administrators can add employees and assign roles, IDs, PINs, and sites from **Admin → Users**.
 
-## Smoke test
+### First administrator
+
+For an empty production database, enter these as private deployment settings:
+
+- `BOOTSTRAP_ADMIN_NAME`
+- `BOOTSTRAP_ADMIN_ID`
+- `BOOTSTRAP_ADMIN_PIN` — 6–12 digits
+
+The application creates the first administrator only when no administrator exists. After the first successful admin sign-in, remove `BOOTSTRAP_ADMIN_PIN` from the hosting settings. Do not reuse a banking PIN, SSN digits, birth date, or one shared workforce PIN.
+
+## Render deployment
+
+The repository includes `render.yaml` for two services:
+
+- `ghsg-workforce-api` — FastAPI backend
+- `ghsg-employee-portal` — React static frontend
+
+Required private values during Blueprint setup:
+
+- `MONGO_URL`
+- `CORS_ORIGINS` — exact frontend origin
+- `REACT_APP_BACKEND_URL` — backend origin without `/api`
+- Bootstrap administrator values above
+
+Google Sheets OAuth values may remain blank for the initial rollout. Configure them only when GHSG is ready to connect Sheets.
+
+## Production smoke test
 
 - Invalid Employee ID/PIN returns a generic authentication error.
-- Valid employee can sign in.
-- Employee sees only assigned/active sites.
-- GPS outside the configured radius is flagged.
-- Clock-in records photo, coordinates, timestamp, user, and site.
-- Lunch start/end cannot be duplicated.
-- Clock-out calculates hours after lunch.
+- Bootstrap administrator can sign in.
+- Administrator can create a Brownsville work site and an employee.
+- Employee sees only assigned active sites.
+- Browne shuttle check-in records coordinates, accuracy, distance, timestamp, and attendance-only status.
+- Start Work creates a paid time entry with photo and GPS.
+- Lunch Out and Lunch In update the same paid entry.
+- End Work completes the entry and calculates paid hours after lunch.
+- Browne return check-out completes the attendance session without changing payroll time.
 - Employee can review and submit the week.
 - Manager can approve or reject.
-- Payroll CSV totals match the approved records.
+- Payroll CSV totals match approved records.
+- iPhone Safari and Android Chrome grant precise location and camera access.
 - Signing out invalidates the session.
 
-## Known remaining integration work
+## Operational decisions still owned by GHSG
 
-- The optional Google sign-in flow still uses Emergent Auth and should be replaced or disabled before treating it as GHSG-owned identity infrastructure.
-- Google Sheets requires GHSG OAuth credentials.
-- Email notifications require a configured provider.
-- A formal privacy/retention policy is required for camera and GPS data.
-- Brownsville employee roster and exact paid-work coordinates are not stored in this public repository.
+- Confirm the travel-time policy with Laurie and Will.
+- Review the first five workdays before enabling the paid-work geofence.
+- Define GPS/photo retention and manager correction procedures.
+- Import or create the current Brownsville roster privately.
+- Confirm the payroll export against the current GHSG submission sheet.
+
+## Validation
+
+- Python source compilation passes.
+- Modified React source parses successfully.
+- GitHub Actions validates backend dependencies/compilation and the production frontend build.
