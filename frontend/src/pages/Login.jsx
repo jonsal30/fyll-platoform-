@@ -19,6 +19,9 @@ import {
 } from "../components/ui/tabs";
 import { User, KeyRound } from "lucide-react";
 
+const GOOGLE_AUTH_ENABLED =
+  process.env.REACT_APP_ENABLE_GOOGLE_AUTH === "true";
+
 const Brand = () => (
   <div
     className="inline-flex flex-col items-center"
@@ -101,7 +104,9 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="numeric" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-horizon">
+              <TabsList
+                className={`grid w-full ${GOOGLE_AUTH_ENABLED ? "grid-cols-2" : "grid-cols-1"} mb-6 bg-horizon`}
+              >
                 <TabsTrigger
                   value="numeric"
                   data-testid="numeric-tab"
@@ -110,14 +115,16 @@ const Login = () => {
                   <KeyRound className="w-4 h-4" />
                   Employee ID
                 </TabsTrigger>
-                <TabsTrigger
-                  value="google"
-                  data-testid="google-tab"
-                  className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white"
-                >
-                  <User className="w-4 h-4" />
-                  Google
-                </TabsTrigger>
+                {GOOGLE_AUTH_ENABLED && (
+                  <TabsTrigger
+                    value="google"
+                    data-testid="google-tab"
+                    className="flex items-center gap-2 data-[state=active]:bg-keystone data-[state=active]:text-white"
+                  >
+                    <User className="w-4 h-4" />
+                    Google
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="numeric">
@@ -163,8 +170,9 @@ const Login = () => {
                 </form>
               </TabsContent>
 
-              <TabsContent value="google">
-                <div className="space-y-4">
+              {GOOGLE_AUTH_ENABLED && (
+                <TabsContent value="google">
+                  <div className="space-y-4">
                   <p className="text-sm text-muted-foreground text-center">
                     Managers and administrators may use their approved Google
                     account
@@ -195,8 +203,9 @@ const Login = () => {
                     </svg>
                     Continue with Google
                   </Button>
-                </div>
-              </TabsContent>
+                  </div>
+                </TabsContent>
+              )}
             </Tabs>
           </CardContent>
         </Card>
