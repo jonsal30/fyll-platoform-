@@ -16,9 +16,21 @@ services:
       - key: CORS_ORIGINS
         sync: false
       - key: GEOFENCE_ENFORCED
-        value: true
+        value: false
       - key: ALLOW_SELF_REGISTRATION
         value: false
+      - key: BROWNE_LATITUDE
+        value: 25.917616
+      - key: BROWNE_LONGITUDE
+        value: -97.389920
+      - key: BROWNE_RADIUS_METERS
+        value: 400
+      - key: BOOTSTRAP_ADMIN_NAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_ID
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PIN
+        sync: false
       - key: GOOGLE_SHEETS_CLIENT_ID
         sync: false
       - key: GOOGLE_SHEETS_CLIENT_SECRET
@@ -39,3 +51,5 @@ services:
     envVars:
       - key: REACT_APP_BACKEND_URL
         sync: false
+      - key: REACT_APP_ENABLE_GOOGLE_AUTH
+        value: false
