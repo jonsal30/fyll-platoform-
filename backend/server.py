@@ -9,6 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Dict, Any
 import uuid
+import secrets
 from datetime import datetime, timezone, timedelta
 import httpx
 import math
@@ -181,6 +182,14 @@ class CreateSiteRequest(BaseModel):
     longitude: float
     radius_meters: int = 200
 
+class CreateUserRequest(BaseModel):
+    name: str
+    email: Optional[EmailStr] = None
+    role: str = "employee"
+    numeric_id: str
+    pin: str
+    assigned_sites: List[str] = []
+
 class UpdateUserRequest(BaseModel):
     role: Optional[str] = None
     assigned_sites: Optional[List[str]] = None
@@ -337,7 +346,7 @@ async def create_session(request: Request, response: Response):
         max_age=7*24*60*60
     )
     
-    user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "pin_hash": 0})
     return user
 
 @api_router.post("/auth/numeric-login")
@@ -370,7 +379,10 @@ async def numeric_login(request: NumericLoginRequest, response: Response):
         max_age=7*24*60*60
     )
     
-    return user
+    return await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "pin_hash": 0}
+    )
 
 @api_router.get("/auth/me")
 async def get_me(request: Request):
@@ -378,7 +390,10 @@ async def get_me(request: Request):
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return user
+    return await db.users.find_one(
+        {"user_id": user["user_id"]},
+        {"_id": 0, "pin_hash": 0}
+    )
 
 @api_router.post("/auth/logout")
 async def logout(request: Request, response: Response):
@@ -465,6 +480,11 @@ async def record_attendance_event(request: Request, data: AttendanceEventRequest
         distance = calculate_distance(float(browne_lat), float(browne_lon), data.latitude, data.longitude)
         event["distance_from_browne_meters"] = round(distance, 1)
         event["within_browne_geofence"] = distance <= browne_radius
+        if not capture_for_geofence and distance > browne_radius:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Outside the Browne attendance area ({round(distance)} meters away)"
+            )
 
     if data.event_type == "shuttle_check_in":
         if active:
@@ -1015,6 +1035,37 @@ async def delete_site(site_id: str, request: Request):
 
 # ==================== USER MANAGEMENT ENDPOINTS ====================
 
+@api_router.post("/users")
+async def create_user(request: Request, data: CreateUserRequest):
+    """Create a pre-provisioned employee, manager, or administrator."""
+    admin = await get_current_user(request)
+    if not admin:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if admin.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    if data.role not in {"employee", "manager", "admin"}:
+        raise HTTPException(status_code=400, detail="Invalid role")
+    if not data.numeric_id.strip():
+        raise HTTPException(status_code=400, detail="Employee ID is required")
+    if not (4 <= len(data.pin) <= 12) or not data.pin.isdigit():
+        raise HTTPException(status_code=400, detail="PIN must contain 4 to 12 digits")
+    if await db.users.find_one({"numeric_id": data.numeric_id.strip()}):
+        raise HTTPException(status_code=409, detail="Employee ID is already in use")
+
+    new_user = User(
+        name=data.name.strip(),
+        email=str(data.email) if data.email else None,
+        role=data.role,
+        numeric_id=data.numeric_id.strip(),
+        pin_hash=pwd_context.hash(data.pin),
+        assigned_sites=data.assigned_sites,
+    )
+    await db.users.insert_one(new_user.model_dump())
+    return await db.users.find_one(
+        {"user_id": new_user.user_id},
+        {"_id": 0, "pin_hash": 0}
+    )
+
 @api_router.get("/users")
 async def get_users(request: Request):
     """Get all users (admin/manager)"""
@@ -1039,6 +1090,17 @@ async def update_user(user_id: str, request: Request, data: UpdateUserRequest):
         raise HTTPException(status_code=403, detail="Admin access required")
     
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if "numeric_id" in update_data:
+        numeric_id = update_data["numeric_id"].strip()
+        if not numeric_id:
+            raise HTTPException(status_code=400, detail="Employee ID is required")
+        duplicate = await db.users.find_one({
+            "numeric_id": numeric_id,
+            "user_id": {"$ne": user_id}
+        })
+        if duplicate:
+            raise HTTPException(status_code=409, detail="Employee ID is already in use")
+        update_data["numeric_id"] = numeric_id
     pin = update_data.pop("pin", None)
     if pin is not None:
         if not (4 <= len(pin) <= 12) or not pin.isdigit():
@@ -1686,6 +1748,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def create_bootstrap_admin():
+    """Create the first administrator once from private deployment settings."""
+    if await db.users.count_documents({"role": "admin"}) > 0:
+        return
+
+    admin_id = os.environ.get("BOOTSTRAP_ADMIN_ID", "").strip()
+    admin_pin = os.environ.get("BOOTSTRAP_ADMIN_PIN", "").strip()
+    admin_name = os.environ.get("BOOTSTRAP_ADMIN_NAME", "GHSG Administrator").strip()
+
+    if not admin_id and not admin_pin:
+        logger.warning("No administrator exists; configure BOOTSTRAP_ADMIN_ID and BOOTSTRAP_ADMIN_PIN")
+        return
+    if not admin_id or not (6 <= len(admin_pin) <= 12) or not admin_pin.isdigit():
+        logger.error("Bootstrap administrator settings are incomplete or invalid")
+        return
+    if await db.users.find_one({"numeric_id": admin_id}):
+        logger.error("Bootstrap employee ID already belongs to a non-admin user")
+        return
+
+    bootstrap = User(
+        name=admin_name,
+        role="admin",
+        numeric_id=admin_id,
+        pin_hash=pwd_context.hash(admin_pin),
+    )
+    await db.users.insert_one(bootstrap.model_dump())
+    logger.warning("Bootstrap administrator created; remove BOOTSTRAP_ADMIN_PIN from deployment settings")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
