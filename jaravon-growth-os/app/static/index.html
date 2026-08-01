@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Jaravon Growth OS</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07100f;
+      --panel: #0d1917;
+      --panel-2: #12211e;
+      --line: #243a35;
+      --text: #f4f7f6;
+      --muted: #9db0ab;
+      --accent: #7ee2b8;
+      --danger: #ff8d8d;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #142824 0, var(--bg) 38%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    button, input, textarea { font: inherit; }
+    .shell { max-width: 1400px; margin: 0 auto; padding: 32px; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+    h1 { font-size: clamp(30px, 5vw, 54px); line-height: .98; margin: 0 0 12px; letter-spacing: -.04em; }
+    h2 { font-size: 20px; margin: 0; }
+    p { color: var(--muted); margin: 0; line-height: 1.5; }
+    .status { min-width: 250px; padding: 16px 18px; border: 1px solid var(--line); background: rgba(13,25,23,.9); border-radius: var(--radius); }
+    .status strong { color: var(--accent); }
+    .grid { display: grid; grid-template-columns: repeat(12,1fr); gap: 16px; }
+    .panel { background: rgba(13,25,23,.92); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+    .metrics { grid-column: span 12; display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+    .metric { background: var(--panel-2); border: 1px solid var(--line); border-radius: 13px; padding: 16px; }
+    .metric span { color: var(--muted); font-size: 13px; }
+    .metric strong { display: block; font-size: 28px; margin-top: 6px; }
+    .intake { grid-column: span 4; }
+    .queue { grid-column: span 8; }
+    .approvals { grid-column: span 7; }
+    .audit { grid-column: span 5; }
+    form { display: grid; gap: 10px; margin-top: 16px; }
+    label { font-size: 12px; color: var(--muted); }
+    input, textarea { width: 100%; background: #081411; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+    textarea { min-height: 95px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button { border: 0; border-radius: 10px; padding: 11px 14px; cursor: pointer; background: var(--accent); color: #052018; font-weight: 750; }
+    button.secondary { background: #1a2d29; color: var(--text); border: 1px solid var(--line); }
+    button.danger { background: var(--danger); color: #270606; }
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+    th, td { text-align: left; padding: 11px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-size: 12px; font-weight: 650; }
+    td { font-size: 13px; }
+    .score { font-size: 19px; font-weight: 800; color: var(--accent); }
+    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #192d28; color: var(--muted); font-size: 11px; }
+    .approval { border-top: 1px solid var(--line); padding: 16px 0; }
+    .approval:first-of-type { border-top: 0; }
+    .approval pre { white-space: pre-wrap; background: #081411; padding: 12px; border-radius: 10px; color: #d9e6e2; max-height: 230px; overflow: auto; }
+    .actions { display: flex; gap: 8px; }
+    .audit-list { margin-top: 14px; max-height: 520px; overflow: auto; }
+    .audit-item { padding: 11px 0; border-bottom: 1px solid var(--line); }
+    .audit-item code { color: var(--accent); }
+    .small { font-size: 12px; }
+    .toolbar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    @media (max-width: 980px) {
+      .intake,.queue,.approvals,.audit { grid-column: span 12; }
+      .metrics { grid-template-columns: repeat(2,1fr); }
+      header { flex-direction: column; }
+      .status { width: 100%; }
+    }
+    @media (max-width: 600px) {
+      .shell { padding: 20px 14px; }
+      .metrics { grid-template-columns: 1fr; }
+      .row { grid-template-columns: 1fr; }
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Jaravon<br>Growth OS</h1>
+        <p>GHSG Opportunity Engine · bounded autonomy with evidence, approvals, and audit.</p>
+      </div>
+      <div class="status" id="system-status">Loading system status…</div>
+    </header>
+
+    <main class="grid">
+      <section class="metrics" id="metrics"></section>
+
+      <section class="panel intake">
+        <h2>Add opportunity</h2>
+        <p class="small">The engine will score and route it automatically.</p>
+        <form id="opportunity-form">
+          <div><label>Company</label><input name="company" required></div>
+          <div class="row">
+            <div><label>Industry</label><input name="industry" required></div>
+            <div><label>Location</label><input name="location" required></div>
+          </div>
+          <div class="row">
+            <div><label>Contact</label><input name="contact_name"></div>
+            <div><label>Email</label><input name="contact_email" type="email"></div>
+          </div>
+          <div><label>Observed signal</label><textarea name="signal" required></textarea></div>
+          <div><label>Estimated first-year value</label><input name="estimated_value" type="number" min="0" value="100000"></div>
+          <div class="row">
+            <div><label>Urgency (0–10)</label><input name="urgency" type="number" min="0" max="10" value="7"></div>
+            <div><label>Buyer access (0–10)</label><input name="buyer_access" type="number" min="0" max="10" value="6"></div>
+          </div>
+          <div class="row">
+            <div><label>Delivery fit (0–10)</label><input name="delivery_fit" type="number" min="0" max="10" value="8"></div>
+            <div><label>Payment risk (0–10)</label><input name="payment_risk" type="number" min="0" max="10" value="3"></div>
+          </div>
+          <div class="row">
+            <div><label>Staffing difficulty</label><input name="staffing_difficulty" type="number" min="0" max="10" value="6"></div>
+            <div><label>Competition</label><input name="competition" type="number" min="0" max="10" value="5"></div>
+          </div>
+          <button type="submit">Create opportunity</button>
+        </form>
+        <div class="toolbar">
+          <button class="secondary" id="run-engine">Run engine now</button>
+          <button class="danger" id="kill-switch">Enable kill switch</button>
+        </div>
+      </section>
+
+      <section class="panel queue">
+        <h2>Priority pipeline</h2>
+        <p class="small">Highest scored opportunities across the current GHSG pipeline.</p>
+        <div id="pipeline"></div>
+      </section>
+
+      <section class="panel approvals">
+        <h2>Approval inbox</h2>
+        <p class="small">Nothing leaves Jaravon without the policy-required approval.</p>
+        <div id="approvals"></div>
+      </section>
+
+      <section class="panel audit">
+        <h2>Audit history</h2>
+        <p class="small">Who or what acted, what changed, and when.</p>
+        <div class="audit-list" id="audit"></div>
+      </section>
+    </main>
+  </div>
+
+<script>
+const adminKey = () => localStorage.getItem("jaravonAdminKey") || "";
+const headers = () => ({
+  "Content-Type": "application/json",
+  ...(adminKey() ? {"X-Jaravon-Key": adminKey()} : {})
+});
+
+async function api(path, options={}) {
+  const response = await fetch(path, {...options, headers: {...headers(), ...(options.headers||{})}});
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      const key = prompt("Enter the Jaravon admin key");
+      if (key) {
+        localStorage.setItem("jaravonAdminKey", key);
+        return api(path, options);
+      }
+    }
+    throw new Error(payload.detail || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+function money(value) {
+  return new Intl.NumberFormat("en-US", {style:"currency", currency:"USD", maximumFractionDigits:0}).format(value || 0);
+}
+
+async function refresh() {
+  const [dashboard, approvals, audit] = await Promise.all([
+    api("/api/dashboard"), api("/api/approvals"), api("/api/audit?limit=60")
+  ]);
+  const system = dashboard.system;
+  document.querySelector("#system-status").innerHTML =
+    `<strong>${system.autonomy_level}</strong> autonomy<br>` +
+    `<span class="small">Kill switch: ${system.kill_switch ? "ENABLED" : "off"}</span>`;
+
+  const qualified = dashboard.top_opportunities.filter(x => (x.score || 0) >= 65).length;
+  const pipelineValue = dashboard.top_opportunities.reduce((sum,x) => sum + (x.estimated_value || 0), 0);
+  document.querySelector("#metrics").innerHTML = `
+    <div class="metric"><span>Pending approvals</span><strong>${dashboard.pending_approvals}</strong></div>
+    <div class="metric"><span>Qualified opportunities</span><strong>${qualified}</strong></div>
+    <div class="metric"><span>Visible pipeline</span><strong>${money(pipelineValue)}</strong></div>
+    <div class="metric"><span>Queued outreach</span><strong>${dashboard.queued_outreach}</strong></div>`;
+
+  document.querySelector("#pipeline").innerHTML = dashboard.top_opportunities.length ? `
+    <table><thead><tr><th>Account</th><th>Score</th><th>Status</th><th>Offer</th><th>Value</th></tr></thead>
+    <tbody>${dashboard.top_opportunities.map(x => `
+      <tr><td><strong>${x.company}</strong><br><span class="small">${x.industry} · ${x.location}</span></td>
+      <td><span class="score">${x.score ?? "—"}</span><br><span class="pill">${x.tier ?? "NEW"}</span></td>
+      <td>${x.status}</td><td>${(x.offer_key || "pending").replaceAll("_"," ")}</td><td>${money(x.estimated_value)}</td></tr>`).join("")}
+    </tbody></table>` : `<p style="margin-top:16px">No opportunities yet.</p>`;
+
+  document.querySelector("#approvals").innerHTML = approvals.length ? approvals.map(a => `
+    <article class="approval">
+      <strong>${a.company}</strong> · score ${a.score} · tier ${a.tier}
+      <p>${a.rationale}</p>
+      <pre>${a.payload.body}</pre>
+      <div class="actions">
+        <button onclick="decide('${a.id}','approve')">Approve and queue</button>
+        <button class="secondary" onclick="decide('${a.id}','reject')">Reject</button>
+      </div>
+    </article>`).join("") : `<p style="margin-top:16px">The approval inbox is clear.</p>`;
+
+  document.querySelector("#audit").innerHTML = audit.map(a => `
+    <div class="audit-item"><code>${a.action}</code><br>
+      <span class="small">${a.actor} · ${new Date(a.created_at).toLocaleString()}</span>
+    </div>`).join("");
+  document.querySelector("#kill-switch").textContent =
+    system.kill_switch ? "Disable kill switch" : "Enable kill switch";
+  document.querySelector("#kill-switch").dataset.enabled = system.kill_switch ? "true" : "false";
+}
+
+async function decide(id, decision) {
+  const by = prompt("Decision by", "John") || "John";
+  await api(`/api/approvals/${id}/decision`, {
+    method:"POST", body:JSON.stringify({decision, decided_by:by, note:"Command-center decision"})
+  });
+  await refresh();
+}
+
+document.querySelector("#opportunity-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.target).entries());
+  ["estimated_value","urgency","buyer_access","delivery_fit","payment_risk","staffing_difficulty","competition"]
+    .forEach(k => data[k] = Number(data[k]));
+  data.evidence = [data.signal];
+  try {
+    await api("/api/opportunities", {method:"POST", body:JSON.stringify(data)});
+    event.target.reset();
+    await api("/api/engine/run", {method:"POST", body:"{}"});
+    await refresh();
+  } catch (error) { alert(error.message); }
+});
+
+document.querySelector("#run-engine").addEventListener("click", async () => {
+  try { await api("/api/engine/run", {method:"POST", body:"{}"}); await refresh(); }
+  catch (error) { alert(error.message); }
+});
+
+document.querySelector("#kill-switch").addEventListener("click", async event => {
+  const currentlyEnabled = event.target.dataset.enabled === "true";
+  const changedBy = prompt("Changed by", "John") || "John";
+  const reason = prompt("Reason", currentlyEnabled ? "Resume controlled operations" : "Executive pause") || "Executive decision";
+  try {
+    await api("/api/system/kill-switch", {
+      method:"POST",
+      body:JSON.stringify({enabled:!currentlyEnabled, changed_by:changedBy, reason})
+    });
+    await refresh();
+  } catch (error) { alert(error.message); }
+});
+
+refresh().catch(error => {
+  document.querySelector("#system-status").textContent = error.message;
+});
+setInterval(() => refresh().catch(() => {}), 30000);
+</script>
+</body>
+</html>
