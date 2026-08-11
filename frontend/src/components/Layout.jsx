@@ -18,6 +18,7 @@ import {
   Briefcase,
   Building2,
   BarChart3,
+  CircleHelp,
 } from "lucide-react";
 
 const Brand = ({ compact = false }) => (
@@ -60,6 +61,7 @@ const Layout = ({ children }) => {
   const navItems = [
     { to: "/dashboard", icon: Home, label: "Clock" },
     { to: "/timesheet", icon: FileText, label: "Timesheet" },
+    { to: "/resources", icon: CircleHelp, label: "Help" },
     ...(user?.role === "manager" || user?.role === "admin"
       ? [
           { to: "/manager", icon: Users, label: "Approvals" },
