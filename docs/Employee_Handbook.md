@@ -45,7 +45,7 @@ If the portal does not confirm the action, take a screenshot and notify your sit
 
 Submission does not replace the employee’s responsibility to report an error promptly.
 
-## Brownsville check-in reference
+## Brownsville attendance sequence
 
 ABM janitorial badging/check-in:
 
@@ -53,7 +53,7 @@ ABM janitorial badging/check-in:
 
 After entering the property, turn left. Look for the ABM trailer with the logo in front of the white shuttle buses.
 
-This address is a check-in reference and must not be configured as the time-clock geofence unless GH Service Group confirms that employees actually begin and end paid work there.
+Use **Check In for Shuttle** at Browne for attendance only. Paid time begins when **Start Work** is recorded at the scheduled shift start. After work ends, use **Check Out at Browne** to confirm the shuttle return; that attendance event does not change paid hours.
 
 ## Troubleshooting
 
@@ -65,12 +65,8 @@ This address is a check-in reference and must not be configured as the time-cloc
 
 ## Support
 
-Website: **ghsgrp.com**
+Paystubs: **https://ghservicegroup.madisonrf.com**
 
-Email:
-
-- HR: **hr@ghsgrp.com**
-- Payroll: **payroll@ghsgrp.com**
-- Careers: **careers@ghsgrp.com**
+Payroll: **payroll@ghsgroup.com**
 
 © 2026 GH Service Group LLC
