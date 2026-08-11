@@ -12,6 +12,7 @@ import ApprovalPage from "./pages/ApprovalPage";
 import AdminPanel from "./pages/AdminPanel";
 import AuthCallback from "./pages/AuthCallback";
 import ATS from "./pages/ATS";
+import Resources from "./pages/Resources";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
@@ -120,6 +121,12 @@ function AppRouter() {
         </ProtectedRoute>
       } />
       
+      <Route path="/resources" element={
+        <ProtectedRoute>
+          <Resources />
+        </ProtectedRoute>
+      } />
+
       <Route path="/timesheet" element={
         <ProtectedRoute>
           <Timesheet />
