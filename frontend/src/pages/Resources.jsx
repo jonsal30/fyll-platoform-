@@ -7,7 +7,6 @@ import {
   MapPin,
   Mail,
   Bus,
-  Clock3,
   ShieldCheck,
 } from "lucide-react";
 
