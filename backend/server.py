@@ -60,6 +60,9 @@ from modules.admin_settings import router as admin_settings_router
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+LOGIN_MAX_ATTEMPTS = int(os.environ.get("LOGIN_MAX_ATTEMPTS", "5"))
+LOGIN_WINDOW_MINUTES = int(os.environ.get("LOGIN_WINDOW_MINUTES", "15"))
+MAX_PHOTO_BYTES = int(os.environ.get("MAX_PHOTO_BYTES", "1500000"))
 
 # ==================== MODELS ====================
 
@@ -148,15 +151,15 @@ class Notification(BaseModel):
 
 class ClockInRequest(BaseModel):
     site_id: str
-    photo: Optional[str] = None  # Base64 encoded
-    latitude: float
-    longitude: float
+    photo: Optional[str] = None  # Base64 encoded JPEG data URL
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
 
 class ClockOutRequest(BaseModel):
     entry_id: str
     photo: Optional[str] = None
-    latitude: float
-    longitude: float
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
 
 class LunchRequest(BaseModel):
     entry_id: str
@@ -164,9 +167,9 @@ class LunchRequest(BaseModel):
 
 class AttendanceEventRequest(BaseModel):
     event_type: str
-    latitude: float
-    longitude: float
-    accuracy: Optional[float] = None
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    accuracy: Optional[float] = Field(default=None, ge=0, le=10000)
     site_id: Optional[str] = None
 
 class ApprovalRequest(BaseModel):
@@ -233,6 +236,53 @@ def calculate_hours(clock_in: datetime, clock_out: datetime, lunch_start: Option
         total -= lunch_duration
     return round(total, 2)
 
+def validate_photo(photo: Optional[str]) -> None:
+    """Reject unexpected or oversized client photo payloads before MongoDB storage."""
+    if not photo:
+        return
+    prefix = "data:image/jpeg;base64,"
+    if not photo.startswith(prefix):
+        raise HTTPException(status_code=400, detail="Verification photo must be a JPEG image")
+    payload = photo[len(prefix):]
+    estimated_bytes = (len(payload) * 3) // 4
+    if estimated_bytes > MAX_PHOTO_BYTES:
+        raise HTTPException(status_code=413, detail="Verification photo is too large; retake the photo")
+
+async def check_login_rate_limit(numeric_id: str, client_ip: str) -> str:
+    """Limit repeated PIN guesses per employee ID and source address."""
+    key = f"{numeric_id}:{client_ip}"
+    now = datetime.now(timezone.utc)
+    record = await db.login_attempts.find_one({"key": key}, {"_id": 0})
+    if record:
+        expires_at = record.get("expires_at")
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at and expires_at > now and record.get("count", 0) >= LOGIN_MAX_ATTEMPTS:
+            retry_seconds = max(1, int((expires_at - now).total_seconds()))
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many sign-in attempts. Try again in {retry_seconds // 60 + 1} minutes.",
+                headers={"Retry-After": str(retry_seconds)},
+            )
+        if not expires_at or expires_at <= now:
+            await db.login_attempts.delete_one({"key": key})
+    return key
+
+async def record_login_failure(key: str) -> None:
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(minutes=LOGIN_WINDOW_MINUTES)
+    await db.login_attempts.update_one(
+        {"key": key},
+        {
+            "$inc": {"count": 1},
+            "$set": {"last_attempt": now, "expires_at": expires_at},
+            "$setOnInsert": {"created_at": now},
+        },
+        upsert=True,
+    )
+
 async def get_current_user(request: Request) -> Optional[dict]:
     """Get current user from session token"""
     session_token = request.cookies.get("session_token")
@@ -274,7 +324,9 @@ async def create_notification(user_id: str, title: str, message: str, notif_type
 
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
-    """Exchange session_id for session_token (Emergent OAuth)"""
+    """Exchange a legacy Emergent OAuth session only when explicitly enabled."""
+    if os.environ.get("ENABLE_LEGACY_GOOGLE_AUTH", "false").lower() != "true":
+        raise HTTPException(status_code=404, detail="Not found")
     body = await request.json()
     session_id = body.get("session_id")
     
@@ -350,13 +402,18 @@ async def create_session(request: Request, response: Response):
     return user
 
 @api_router.post("/auth/numeric-login")
-async def numeric_login(request: NumericLoginRequest, response: Response):
+async def numeric_login(data: NumericLoginRequest, request: Request, response: Response):
     """Login with employee ID and private PIN."""
-    user = await db.users.find_one({"numeric_id": request.numeric_id}, {"_id": 0})
+    numeric_id = data.numeric_id.strip()
+    client_ip = request.client.host if request.client else "unknown"
+    attempt_key = await check_login_rate_limit(numeric_id, client_ip)
+    user = await db.users.find_one({"numeric_id": numeric_id}, {"_id": 0})
     pin_hash = user.get("pin_hash") if user else None
 
-    if not user or not pin_hash or not pwd_context.verify(request.pin, pin_hash):
+    if not user or not pin_hash or not pwd_context.verify(data.pin, pin_hash):
+        await record_login_failure(attempt_key)
         raise HTTPException(status_code=401, detail="Invalid Employee ID or PIN")
+    await db.login_attempts.delete_one({"key": attempt_key})
     
     # Create session
     session_token = f"st_{uuid.uuid4().hex}"
@@ -365,8 +422,8 @@ async def numeric_login(request: NumericLoginRequest, response: Response):
     await db.user_sessions.insert_one({
         "user_id": user["user_id"],
         "session_token": session_token,
-        "expires_at": expires_at.isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc)
     })
     
     response.set_cookie(
@@ -536,6 +593,7 @@ async def record_attendance_event(request: Request, data: AttendanceEventRequest
 @api_router.post("/clock/in")
 async def clock_in(request: Request, data: ClockInRequest):
     """Clock in to a site"""
+    validate_photo(data.photo)
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -594,6 +652,7 @@ async def clock_in(request: Request, data: ClockInRequest):
 @api_router.post("/clock/out")
 async def clock_out(request: Request, data: ClockOutRequest):
     """Clock out from current entry"""
+    validate_photo(data.photo)
     user = await get_current_user(request)
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -1741,17 +1800,30 @@ app.include_router(hr_router)
 app.include_router(admin_settings_router)
 
 # CORS middleware
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Accept", "Authorization", "Content-Type"],
 )
 
 @app.on_event("startup")
 async def create_bootstrap_admin():
-    """Create the first administrator once from private deployment settings."""
+    """Prepare production indexes and create the first administrator once."""
+    await db.user_sessions.create_index("expires_at", expireAfterSeconds=0)
+    await db.login_attempts.create_index("expires_at", expireAfterSeconds=0)
+    await db.login_attempts.create_index("key", unique=True)
+    try:
+        await db.users.create_index("numeric_id", unique=True, sparse=True)
+    except Exception:
+        logger.exception("Could not enforce the unique employee ID index; review existing users")
+
     if await db.users.count_documents({"role": "admin"}) > 0:
         return
 
