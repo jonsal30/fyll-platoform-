@@ -19,6 +19,14 @@ services:
         value: false
       - key: ALLOW_SELF_REGISTRATION
         value: false
+      - key: ENABLE_LEGACY_GOOGLE_AUTH
+        value: false
+      - key: LOGIN_MAX_ATTEMPTS
+        value: 5
+      - key: LOGIN_WINDOW_MINUTES
+        value: 15
+      - key: MAX_PHOTO_BYTES
+        value: 1500000
       - key: BROWNE_LATITUDE
         value: 25.917616
       - key: BROWNE_LONGITUDE
