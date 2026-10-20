@@ -24,7 +24,7 @@ fastuuid==0.14.0
 filelock==3.24.2
 flake8==7.3.0
 frozenlist==1.8.0
-fsspec==2026.2.0
+fsspec==2026.6.0
 google-ai-generativelanguage==0.6.15
 google-api-core==2.29.0
 google-api-python-client==2.190.0
